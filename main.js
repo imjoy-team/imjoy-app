@@ -12,7 +12,7 @@ function createWindow () {
 
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
-  mainWindow.loadURL('http://imjoy.io/#/app');
+  mainWindow.loadURL('https://imjoy.io/#/app');
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
