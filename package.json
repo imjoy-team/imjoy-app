@@ -1,0 +1,18 @@
+{
+  "name": "ImJoy.IO",
+  "version": "1.0.0",
+  "description": "Desktop version of ImJoy.io",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/oeway/ImJoy",
+  "keywords": [
+    "ImJoy",
+  ],
+  "author": "Wei OUYANG",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^3.0.4"
+  }
+}
