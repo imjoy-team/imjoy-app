@@ -4,7 +4,10 @@
   "description": "Desktop version of ImJoy.io",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy.icns --prune=true",
+    "package-windows64": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy.ico --prune=true",
+    "package-linux64": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy.png --prune=true"
   },
   "repository": "https://github.com/oeway/ImJoy",
   "keywords": [
@@ -13,6 +16,7 @@
   "author": "Wei OUYANG",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^3.0.4"
+    "electron": "^3.0.4",
+    "electron-packager": "^12.2.0"
   }
 }
