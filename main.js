@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol} = require('electron')
+const {app, BrowserWindow, protocol, Menu} = require('electron')
 const path = require('path')
 const url = require('url')
 // Keep a global reference of the window object, if you don't, the window will
@@ -25,6 +25,29 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+  // Create the Application's main menu
+  const template = [{
+      label: "ImJoy",
+      submenu: [
+          { label: "New ImJoy Instance", click: function() { let appWindow = new BrowserWindow(); appWindow.loadURL('https://imjoy.io/#/app'); appWindow.on('closed', function () {appWindow = null});}},
+          { label: "About ImJoy", click: function() { let aboutWindow = new BrowserWindow(); aboutWindow.loadURL('https://imjoy.io/#/about'); aboutWindow.on('closed', function () {aboutWindow = null});}},
+          { type: "separator" },
+          { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
+      ]}, {
+      label: "Edit",
+      submenu: [
+          { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+          { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+          { type: "separator" },
+          { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+          { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+          { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+          { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+      ]}
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 // This method will be called when Electron has finished
