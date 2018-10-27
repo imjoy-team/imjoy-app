@@ -1,15 +1,121 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol, Menu} = require('electron')
+const {app, BrowserWindow, protocol, dialog, Menu} = require('electron')
 const path = require('path')
 const url = require('url')
+const child_process = require('child_process')
+const http = require('http')
+const https = require('https')
+const os = require('os')
+const fs = require('fs')
+const ProgressBar = require('electron-progressbar')
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
+const HOME = os.homedir()
+const InstallDir = path.join(HOME, "ImJoyAppX")
+
+
+function download(url, dest) {
+  return new Promise((resolve, reject)=>{
+    const file = fs.createWriteStream(dest);
+    const request = https.get(url, function(response) {
+      response.pipe(file);
+      file.on('finish', function() {
+        file.close(resolve);  // close() is async, call cb after close completes.
+      });
+    }).on('error', function(err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      reject(err.message);
+    });
+  })
+}
+
+function installImJoyMac(appWindow) {
+  const progressBar = new ProgressBar({
+    indeterminate: true,
+    text: 'Installing ImJoy Plugin Engine',
+    detail: 'Installing...',
+    browserWindow: {parent: appWindow}
+  });
+
+  progressBar
+    .on('completed', function() {
+      console.info(`completed...`);
+      progressBar.detail = 'Installation completed. Exiting...';
+    })
+    .on('aborted', function() {
+      console.info(`aborted...`);
+    })
+
+    .on('progress', function(value) {
+      progressBar.detail = value;
+    });
+
+  progressBar.detail = 'Checking installation directory...'
+  if(fs.existsSync(InstallDir)){
+     fs.renameSync(InstallDir, `${InstallDir}-${new Date().toJSON()}`, (err) => {
+        if (err) {
+          console.error(err);
+        }
+     })
+  }
+  fs.mkdirSync(InstallDir);
+
+  const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+  progressBar.detail = 'Downloading Miniconda...'
+  download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath).then(()=>{
+    progressBar.detail = 'Miniconda donwloaded.'
+    const p = child_process.spawn('bash', [InstallerPath, '-b', '-f', '-p', InstallDir]);
+    p.stdout.on('data',function(data){
+        console.log(data.toString('utf8'));
+        progressBar.detail = data.toString('utf8');
+    });
+    p.on('close', (code, signal) => {
+      if(code == 0){
+        progressBar.detail = "Installing ImJoyEngine..."
+        const p2 = child_process.spawnSync('pip', ['install', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy'], {env: {PATH: `${InstallDir}/bin`}})
+        progressBar.setCompleted()
+        progressBar.close()
+        if(!p2.error){
+          dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
+        }
+        else{
+          dialog.showErrorBox("Failled", `Failed to Install Miniconda (exit code: ${code}).`)
+        }
+
+      }
+      else{
+        progressBar.setCompleted()
+        progressBar.close()
+        dialog.showErrorBox("Failled", `Failed to Install Miniconda (exit code: ${code}).`)
+      }
+      if(signal){
+        console.log(
+          `child process terminated due to receipt of signal ${signal}`);
+      }
+    });
+
+  }).catch((e)=>{
+    console.error(e)
+  })
+
+}
+
+function installImJoy(appWindow){
+  installImJoyMac(appWindow)
+}
+
+function startImJoy() {
+  const p = child_process.spawn('python', ['-m', 'imjoy']);
+  p.stdout.on('data',function(data){
+      console.log("data: ", data.toString('utf8'));
+  });
+}
 
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico'})
-
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
   mainWindow.loadURL('https://imjoy.io/#/app');
@@ -30,10 +136,12 @@ function createWindow () {
   const template = [{
       label: "ImJoy",
       submenu: [
-          { label: "New ImJoy Instance", click: function() { let appWindow = new BrowserWindow(); appWindow.loadURL('https://imjoy.io/#/app'); appWindow.on('closed', function () {appWindow = null});}},
-          { label: "About ImJoy", click: function() { let aboutWindow = new BrowserWindow(); aboutWindow.loadURL('https://imjoy.io/#/about'); aboutWindow.on('closed', function () {aboutWindow = null});}},
+          { label: "New ImJoy Instance", click: ()=>{ let appWindow = new BrowserWindow(); appWindow.loadURL('https://imjoy.io/#/app'); appWindow.on('closed', function () {appWindow = null});}},
+          { label: "About ImJoy", click: ()=>{ let aboutWindow = new BrowserWindow(); aboutWindow.loadURL('https://imjoy.io/#/about'); aboutWindow.on('closed', function () {aboutWindow = null});}},
           { type: "separator" },
-          { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
+          { label: "Install Plugin Engine", click: ()=>{installImJoy(mainWindow)}},
+          { type: "separator" },
+          { label: "Quit", accelerator: "Command+Q", click: ()=>{ app.quit(); }}
       ]}, {
       label: "Edit",
       submenu: [
@@ -54,14 +162,7 @@ function createWindow () {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
-  protocol.interceptFileProtocol('file', (request, callback) => {
-    const url = request.url.substr(7)    /* all urls start with 'file://' */
-    callback({ path: path.normalize(`docs/${__dirname}/${url}`) })
-  }, (err) => {
-    if (err) console.error('Failed to register protocol')
-  })
   createWindow()
-
 })
 
 // Quit when all windows are closed.

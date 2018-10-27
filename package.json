@@ -5,9 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy.icns --prune=true",
-    "package-windows64": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy.ico --prune=true",
-    "package-linux64": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy.png --prune=true"
+    "build": "npm run package-mac; npm run package-linux64; npm run package-win64",
+    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite",
+    "package-win64": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite",
+    "package-linux64": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite"
   },
   "repository": "https://github.com/oeway/ImJoy",
   "keywords": [
@@ -18,5 +19,8 @@
   "devDependencies": {
     "electron": "^3.0.4",
     "electron-packager": "^12.2.0"
+  },
+  "dependencies": {
+    "electron-progressbar": "^1.1.0"
   }
 }
