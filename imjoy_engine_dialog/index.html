@@ -206,7 +206,7 @@
 		<div id="progressBarContainer"></div>
 		<div id="detail"></div>
 		<div id="logContainer"></div>
-		<div class="btn-group">
+		<div class="btn-group" id="buttonGroup">
 			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {hide: true})">Hide</button>
 			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {exit: true})">Exit</button>
 		</div>
@@ -254,6 +254,10 @@
 				}
 
 				window.requestAnimationFrame(synchronizeUi);
+
+				if(settings.hideButtons){
+					document.querySelector("#buttonGroup").style.display = "none";
+				}
 			}
 
 			function sendCommand(cmd, arg){
@@ -293,8 +297,6 @@
 						}
 					}
 				});
-
-
 
 				div.appendChild(p);
 
@@ -342,6 +344,7 @@
 			require("electron").ipcRenderer.on("LOG", (event, value) => {
 				append_log(value, false)
 			});
+
 			require("electron").ipcRenderer.on("ERROR", (event, value) => {
 				append_log(value, true)
 			});

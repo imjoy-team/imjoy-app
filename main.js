@@ -96,14 +96,25 @@ function executeCmd(label, cmd, param, ed, callback) {
 }
 
 ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
+  if(!engineDialog) {
+    console.log('event received, but engine dialog closed.', arg)
+    return;
+  }
+
   if(arg.show){
     engineDialog.show()
     event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
   }
   else if(arg.exit){
     try {
-      for(let p of processes){
-        p.kill()
+      if(processes.length == 0){
+        engineDialog.setCompleted()
+        engineDialog.close()
+      }
+      else{
+        for(let p of processes){
+          p.kill()
+        }
       }
       event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
     } catch (e) {
@@ -116,13 +127,14 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
   }
 })
 
-function initEngineDialog(appWindow){
+function initEngineDialog(config){
   const ed = new EngineDialog({
+    hideButtons: config && config.hideButtons,
     indeterminate: true,
     text: 'ImJoy Plugin Engine',
     detail: '',
     title: 'ImJoy Plugin Engine',
-    browserWindow: appWindow && {parent: appWindow}
+    browserWindow: config && config.appWindow && {parent: config.appWindow}
   });
 
   ed.on('completed', function() {
@@ -135,78 +147,104 @@ function initEngineDialog(appWindow){
   .on('progress', function(value) {
     ed.log(value);
   });
+
+  ed.hide()
   return ed
 }
 
-function installImJoyEngine(ed) {
+function checkOldInstallation(){
   return new Promise((resolve, reject)=>{
-    ed.log('Checking installation directory...')
     if(fs.existsSync(InstallDir)){
-       fs.renameSync(InstallDir, `${InstallDir}-${new Date().toJSON()}`, (err) => {
-          if (err) {
-            console.error(err);
+        const dateStr = new Date().toJSON()
+        const dialogOptions = {type: 'info', buttons: ['Yes, reinstall it', 'Cancel'], message: `Found existing ImJoy Plugin Engine in ~/ImJoyApp folder, are you sure to remove it and start a new installation?`}
+        dialog.showMessageBox(dialogOptions, (choice) => {
+          if(choice == 0){
+            fs.renameSync(InstallDir, `${InstallDir}-${dateStr}`, (err) => {
+               if (err) {
+                 console.error(err);
+               }
+            })
+            resolve()
           }
-       })
+          else{
+            console.log('installation is canceled by the user.')
+            reject()
+          }
+        })
     }
-    fs.mkdirSync(InstallDir);
+    else{
+      resolve()
+    }
+  })
+}
 
-    const cmds = [
-      ['Replace User Site', 'python', ['-c', replace_user_site]],
-      ['Install Git', 'conda', ['install', '-y', 'git']],
-      ['Upgrade PIP', 'pip', ['install', '-U', 'pip']],
-      ['Install ImJoy', 'pip', ['install', '-U', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
-    ]
+function installImJoyEngine(appWindow) {
+  return new Promise((resolve, reject)=>{
+    checkOldInstallation().then(()=>{
+      const ed = initEngineDialog({hideButtons: true, appWindow: appWindow})
+      ed.show()
+      fs.mkdirSync(InstallDir);
+      const cmds = [
+        ['Replace User Site', 'python', ['-c', replace_user_site]],
+        ['Install Git', 'conda', ['install', '-y', 'git']],
+        ['Upgrade PIP', 'pip', ['install', '-U', 'pip']],
+        ['Install ImJoy', 'pip', ['install', '-U', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+      ]
 
-    const runCmds = async ()=>{
-      if(process.platform === 'darwin'){
-        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-        ed.log('Downloading Miniconda...')
-        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
-        ed.log('Miniconda donwloaded.')
-        cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
-      }
-      else if(process.platform === 'linux'){
-        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-        ed.log('Downloading Miniconda...')
-        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
-        ed.log('Miniconda donwloaded.')
-        cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
-      }
-      else if(process.platform === 'win32'){
-        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
-        ed.log('Downloading Miniconda...')
-        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
-        ed.log('Miniconda donwloaded.')
-        cmds.unshift(['Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
-      }
-      else{
-        throw "Unsupported Platform: " + process.platform
-      }
+      const runCmds = async ()=>{
+        if(process.platform === 'darwin'){
+          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+          ed.log('Downloading Miniconda...')
+          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
+          ed.log('Miniconda donwloaded.')
+          cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+        }
+        else if(process.platform === 'linux'){
+          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+          ed.log('Downloading Miniconda...')
+          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
+          ed.log('Miniconda donwloaded.')
+          cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+        }
+        else if(process.platform === 'win32'){
+          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
+          ed.log('Downloading Miniconda...')
+          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
+          ed.log('Miniconda donwloaded.')
+          cmds.unshift(['Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+        }
+        else{
+          throw "Unsupported Platform: " + process.platform
+        }
 
-      for(let cmd of cmds){
-        try {
-          await executeCmd(cmd[0], cmd[1], cmd[2], ed)
-        } catch (e) {
-          throw e
+        for(let cmd of cmds){
+          try {
+            await executeCmd(cmd[0], cmd[1], cmd[2], ed)
+          } catch (e) {
+            throw e
+          }
         }
       }
-    }
 
-    runCmds().then(()=>{
-      dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
-      resolve()
-    }).catch((e)=>{
-      dialog.showErrorBox("Failed to Install the Plugin Engine", e)
-      reject()
-    }).finally(()=>{
-      // ed.hide()
-      ed.setCompleted()
-      ed.close()
-    })
+      runCmds().then(()=>{
+        dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
+        resolve()
+      }).catch((e)=>{
+        dialog.showErrorBox("Failed to Install the Plugin Engine", e)
+        reject()
+      }).finally(()=>{
+        // ed.hide()
+        ed.setCompleted()
+        ed.close()
+      })
+    }).catch(reject)
   })
 }
 
 function startImJoyEngine(appWindow) {
+  if(!engineDialog || engineDialog.isCompleted()){
+    engineDialog = initEngineDialog()
+  }
   engineDialog.show()
   if(engineProcess) return;
   if(checkEngineExists()){
@@ -222,8 +260,7 @@ function startImJoyEngine(appWindow) {
     const dialogOptions = {type: 'info', buttons: ['Install', 'Cancel'], message: 'Plugin Engine not found! Would you like to setup Plugin Engine? This may take a while.'}
     dialog.showMessageBox(dialogOptions, (choice) => {
       if(choice == 0){
-        const ed = initEngineDialog(appWindow)
-        installImJoyEngine(ed).then(()=>{
+        installImJoyEngine(appWindow).then(()=>{
           startImJoyEngine(appWindow)
         })
       }
@@ -232,12 +269,6 @@ function startImJoyEngine(appWindow) {
 }
 
 function createWindow (url) {
-  if(engineDialog && !engineDialog.isCompleted()){
-    engineDialog.show()
-  }
-  else{
-    engineDialog = initEngineDialog()
-  }
   // Create the browser window.
   let mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico',
     webPreferences: {
@@ -270,11 +301,11 @@ function createWindow (url) {
   const template = [{
       label: "ImJoy",
       submenu: [
-          { label: "New ImJoy Instance", click: ()=>{ createWindow('https://imjoy.io/#/app') }},
           { label: "About ImJoy", click: ()=>{ createWindow('https://imjoy.io/#/about') }},
           { type: "separator" },
-          // { label: "Install ImJoy Plugin Engine", click: ()=>{const ed = initEngineDialog(mainWindow); installImJoyEngine(ed)}},
-          { label: "ImJoy Plugin Engine", accelerator: "CmdOrCtrl+I", click: ()=>{startImJoyEngine(mainWindow)}},
+          { label: "New ImJoy Instance", click: ()=>{ createWindow('https://imjoy.io/#/app') }},
+          { type: "separator" },
+          { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{ app.quit(); }}
       ]}, {
@@ -287,6 +318,17 @@ function createWindow (url) {
           { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
           { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
           { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+      ]}, {
+      label: "ImJoyEngine",
+      submenu: [
+        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { type: "separator" },
+        { label: "Show Engine Dialog", click: ()=>{ if(engineDialog) {engineDialog.show()} else { startImJoyEngine(mainWindow) }}},
+        { label: "Hide Engine Dialog", click: ()=>{ if(engineDialog) engineDialog.hide() }}
+      ]}, {
+      label: "Help",
+      submenu: [
+        { label: "ImJoy Docs", click: ()=>{ createWindow('https://imjoy.io/docs') }}
       ]}
   ];
 
@@ -307,7 +349,9 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-
+  engineDialog.setCompleted()
+  engineDialog.close()
+  engineDialog = null
   if(processes.length>0){
     try {
       console.log(`killing ${processes.length} processes...`)

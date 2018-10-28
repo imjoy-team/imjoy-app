@@ -187,6 +187,7 @@ class ProgressBar {
 
 	show() {
 		this._window.show()
+		this._window.focus()
 	}
 
 	isInProgress() {
@@ -261,6 +262,12 @@ class ProgressBar {
 	}
 
 	_createWindow() {
+		if(this._options.hideButtons){
+			this._options.browserWindow.height = 400;
+		}
+		else{
+			this._options.browserWindow.height = 450;
+		}
 		this._window = new BrowserWindow(this._options.browserWindow);
 
 		this._window.setMenu(null);
@@ -295,6 +302,7 @@ class ProgressBar {
 
 			if (this._options.maxValue !== null) {
 				this._window.webContents.send('CREATE_PROGRESS_BAR', {
+					hideButtons: this._options.hideButtons,
 					indeterminate: this._options.indeterminate,
 					maxValue: this._options.maxValue
 				});
@@ -307,6 +315,9 @@ class ProgressBar {
 	}
 
 	_updateTaskbarProgress() {
+		// TODO: disable it for now
+		return
+
 		let mainWindow;
 
 		if (this._options.browserWindow && this._options.browserWindow.parent) {
