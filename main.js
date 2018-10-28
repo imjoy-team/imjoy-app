@@ -199,9 +199,9 @@ function installImJoyEngine(ed) {
       dialog.showErrorBox("Failed to Install the Plugin Engine", e)
       reject()
     }).finally(()=>{
-      engineDialog.hide()
-      // engineDialog.setCompleted()
-      // engineDialog.close()
+      // ed.hide()
+      ed.setCompleted()
+      ed.close()
     })
   })
 }
