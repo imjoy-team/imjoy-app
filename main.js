@@ -108,8 +108,11 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
   else if(arg.exit){
     try {
       if(processes.length == 0){
-        engineDialog.setCompleted()
-        engineDialog.close()
+        if(engineDialog){
+          engineDialog.setCompleted()
+          engineDialog.close()
+          engineDialog = null
+        }
       }
       else{
         for(let p of processes){
@@ -252,7 +255,11 @@ function startImJoyEngine(appWindow) {
       console.error(e)
       dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
     }).finally(()=>{
-      engineDialog.hide()
+      if(engineDialog){
+        engineDialog.setCompleted()
+        engineDialog.close()
+        engineDialog = null
+      }
       engineProcess = null
     })
   }
@@ -307,7 +314,11 @@ function createWindow (url) {
           { type: "separator" },
           { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
           { type: "separator" },
-          { label: "Quit", accelerator: "Command+Q", click: ()=>{ app.quit(); }}
+          { label: "Quit", accelerator: "Command+Q", click: ()=>{
+            for(let p of processes){
+              p.kill()
+            }
+            app.quit(); }}
       ]}, {
       label: "Edit",
       submenu: [
@@ -341,6 +352,10 @@ function createWindow (url) {
 app.on('ready', ()=>{
   createWindow('https://imjoy.io/#/app')
 })
+
+// app.on('quit', ()=>{
+//
+// })
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
