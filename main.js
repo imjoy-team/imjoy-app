@@ -1,5 +1,6 @@
+'use strict';
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol, dialog, Menu} = require('electron')
+const {app, BrowserWindow, protocol, dialog, Menu, ipcMain} = require('electron')
 const path = require('path')
 const url = require('url')
 const child_process = require('child_process')
@@ -7,15 +8,47 @@ const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
-const ProgressBar = require('electron-progressbar')
+const EngineDialog = require('./imjoy_engine_dialog')
+let engineDialog = null
+let engineProcess = null
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
+const appWindows = []
 const HOME = os.homedir()
 const InstallDir = path.join(HOME, "ImJoyAppX")
+const processes = []
+process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
+`${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
 
-
+const replace_user_site = `
+import site
+site_file = site.__file__.replace('.pyc', '.py');
+with open(site_file) as fin:
+    lines = fin.readlines();
+for i,line in enumerate(lines):
+    if(line.find('ENABLE_USER_SITE = None') > -1):
+        user_site_line = i;
+        break;
+lines[user_site_line] = 'ENABLE_USER_SITE = False\\n'
+with open(site_file,'w') as fout:
+    fout.writelines(lines)
+print('User site replaced.')
+`
+function checkEngineExists(){
+  if(fs.existsSync(InstallDir)){
+    const p = child_process.spawnSync('python', ['-c', '"import imjoy"']);
+    if(p.status == 0){
+      return true
+    }
+    else{
+      return false
+    }
+  }
+  else{
+    return false
+  }
+}
 function download(url, dest) {
   return new Promise((resolve, reject)=>{
     const file = fs.createWriteStream(dest);
@@ -31,94 +64,190 @@ function download(url, dest) {
   })
 }
 
-function installImJoyMac(appWindow) {
-  const progressBar = new ProgressBar({
-    indeterminate: true,
-    text: 'Installing ImJoy Plugin Engine',
-    detail: 'Installing...',
-    browserWindow: {parent: appWindow}
-  });
-
-  progressBar
-    .on('completed', function() {
-      console.info(`completed...`);
-      progressBar.detail = 'Installation completed. Exiting...';
-    })
-    .on('aborted', function() {
-      console.info(`aborted...`);
-    })
-
-    .on('progress', function(value) {
-      progressBar.detail = value;
-    });
-
-  progressBar.detail = 'Checking installation directory...'
-  if(fs.existsSync(InstallDir)){
-     fs.renameSync(InstallDir, `${InstallDir}-${new Date().toJSON()}`, (err) => {
-        if (err) {
-          console.error(err);
-        }
-     })
-  }
-  fs.mkdirSync(InstallDir);
-
-  const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-  progressBar.detail = 'Downloading Miniconda...'
-  download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath).then(()=>{
-    progressBar.detail = 'Miniconda donwloaded.'
-    const p = child_process.spawn('bash', [InstallerPath, '-b', '-f', '-p', InstallDir]);
+function executeCmd(label, cmd, param, ed, callback) {
+  ed = ed || engineDialog
+  return new Promise((resolve, reject)=>{
+    ed.text = label
+    const p = child_process.spawn(cmd, param);
+    if(callback) callback(p);
+    processes.push(p)
     p.stdout.on('data',function(data){
-        console.log(data.toString('utf8'));
-        progressBar.detail = data.toString('utf8');
+        ed.log(data.toString('utf8'));
+    });
+    p.stderr.on('data',function(data){
+        ed.error(data.toString('utf8'));
     });
     p.on('close', (code, signal) => {
-      if(code == 0){
-        progressBar.detail = "Installing ImJoyEngine..."
-        const p2 = child_process.spawnSync('pip', ['install', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy'], {env: {PATH: `${InstallDir}/bin`}})
-        progressBar.setCompleted()
-        progressBar.close()
-        if(!p2.error){
-          dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
-        }
-        else{
-          dialog.showErrorBox("Failled", `Failed to Install Miniconda (exit code: ${code}).`)
-        }
-
+      //remove the process
+      const index = processes.indexOf(p);
+      if (index > -1) {
+        processes.splice(index, 1);
+      }
+      if(code === null || code == 0){
+        ed.log(`${label}: Done.`)
+        resolve(`${label}: Done.`)
       }
       else{
-        progressBar.setCompleted()
-        progressBar.close()
-        dialog.showErrorBox("Failled", `Failed to Install Miniconda (exit code: ${code}).`)
+        ed.log(`Process '${label}' exited with code: ${code})`)
+        reject(`Process '${label}' exited with code: ${code})`)
       }
-      if(signal){
-        console.log(
-          `child process terminated due to receipt of signal ${signal}`);
-      }
-    });
+    })
+  })
+}
 
-  }).catch((e)=>{
-    console.error(e)
+ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
+  if(arg.show){
+    engineDialog.show()
+    event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
+  }
+  else if(arg.exit){
+    try {
+      for(let p of processes){
+        p.kill()
+      }
+      event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
+    } catch (e) {
+      event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
+    }
+  }
+  else if(arg.hide){
+    engineDialog.hide()
+    event.sender.send('ENGINE_DIALOG_RESULT', {success: true, hide: true})
+  }
+})
+
+function initEngineDialog(appWindow){
+  const ed = new EngineDialog({
+    indeterminate: true,
+    text: 'ImJoy Plugin Engine',
+    detail: '',
+    title: 'ImJoy Plugin Engine',
+    browserWindow: appWindow && {parent: appWindow}
+  });
+
+  ed.on('completed', function() {
+    console.info(`completed...`);
+  })
+  .on('aborted', function() {
+    console.info(`aborted...`);
   })
 
-}
-
-function installImJoy(appWindow){
-  installImJoyMac(appWindow)
-}
-
-function startImJoy() {
-  const p = child_process.spawn('python', ['-m', 'imjoy']);
-  p.stdout.on('data',function(data){
-      console.log("data: ", data.toString('utf8'));
+  .on('progress', function(value) {
+    ed.log(value);
   });
+  return ed
 }
 
-function createWindow () {
+function installImJoyEngine(ed) {
+  return new Promise((resolve, reject)=>{
+    ed.log('Checking installation directory...')
+    if(fs.existsSync(InstallDir)){
+       fs.renameSync(InstallDir, `${InstallDir}-${new Date().toJSON()}`, (err) => {
+          if (err) {
+            console.error(err);
+          }
+       })
+    }
+    fs.mkdirSync(InstallDir);
+
+    const cmds = [
+      ['Replace User Site', 'python', ['-c', replace_user_site]],
+      ['Install Git', 'conda', ['install', '-y', 'git']],
+      ['Upgrade PIP', 'pip', ['install', '-U', 'pip']],
+      ['Install ImJoy', 'pip', ['install', '-U', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+    ]
+
+    const runCmds = async ()=>{
+      if(process.platform === 'darwin'){
+        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+        ed.log('Downloading Miniconda...')
+        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
+        ed.log('Miniconda donwloaded.')
+        cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+      }
+      else if(process.platform === 'linux'){
+        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+        ed.log('Downloading Miniconda...')
+        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
+        ed.log('Miniconda donwloaded.')
+        cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+      }
+      else if(process.platform === 'win32'){
+        const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
+        ed.log('Downloading Miniconda...')
+        await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
+        ed.log('Miniconda donwloaded.')
+        cmds.unshift(['Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+      }
+      else{
+        throw "Unsupported Platform: " + process.platform
+      }
+
+      for(let cmd of cmds){
+        try {
+          await executeCmd(cmd[0], cmd[1], cmd[2], ed)
+        } catch (e) {
+          throw e
+        }
+      }
+    }
+
+    runCmds().then(()=>{
+      dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
+      resolve()
+    }).catch((e)=>{
+      dialog.showErrorBox("Failed to Install the Plugin Engine", e)
+      reject()
+    }).finally(()=>{
+      engineDialog.hide()
+      // engineDialog.setCompleted()
+      // engineDialog.close()
+    })
+  })
+}
+
+function startImJoyEngine(appWindow) {
+  engineDialog.show()
+  if(engineProcess) return;
+  if(checkEngineExists()){
+    executeCmd("ImJoy Plugin Engine", "python", ['-m', 'imjoy'], engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
+      console.error(e)
+      dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
+    }).finally(()=>{
+      engineDialog.hide()
+      engineProcess = null
+    })
+  }
+  else{
+    const dialogOptions = {type: 'info', buttons: ['Install', 'Cancel'], message: 'Plugin Engine not found! Would you like to setup Plugin Engine? This may take a while.'}
+    dialog.showMessageBox(dialogOptions, (choice) => {
+      if(choice == 0){
+        const ed = initEngineDialog(appWindow)
+        installImJoyEngine(ed).then(()=>{
+          startImJoyEngine(appWindow)
+        })
+      }
+    })
+  }
+}
+
+function createWindow (url) {
+  if(engineDialog && !engineDialog.isCompleted()){
+    engineDialog.show()
+  }
+  else{
+    engineDialog = initEngineDialog()
+  }
   // Create the browser window.
-  mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico'})
+  let mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico',
+    webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(__dirname, 'preload.js')
+    }
+  })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
-  mainWindow.loadURL('https://imjoy.io/#/app');
+  mainWindow.loadURL(url);
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -129,17 +258,23 @@ function createWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
+    const index = appWindows.indexOf(mainWindow);
+    if (index > -1) {
+      appWindows.splice(index, 1);
+    }
     mainWindow = null
   })
 
+  appWindows.push(mainWindow)
   // Create the Application's main menu
   const template = [{
       label: "ImJoy",
       submenu: [
-          { label: "New ImJoy Instance", click: ()=>{ let appWindow = new BrowserWindow(); appWindow.loadURL('https://imjoy.io/#/app'); appWindow.on('closed', function () {appWindow = null});}},
-          { label: "About ImJoy", click: ()=>{ let aboutWindow = new BrowserWindow(); aboutWindow.loadURL('https://imjoy.io/#/about'); aboutWindow.on('closed', function () {aboutWindow = null});}},
+          { label: "New ImJoy Instance", click: ()=>{ createWindow('https://imjoy.io/#/app') }},
+          { label: "About ImJoy", click: ()=>{ createWindow('https://imjoy.io/#/about') }},
           { type: "separator" },
-          { label: "Install Plugin Engine", click: ()=>{installImJoy(mainWindow)}},
+          { label: "Install ImJoy Plugin Engine", click: ()=>{const ed = initEngineDialog(mainWindow); installImJoyEngine(ed)}},
+          { label: "ImJoy Plugin Engine", accelerator: "CmdOrCtrl+I", click: ()=>{startImJoyEngine(mainWindow)}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{ app.quit(); }}
       ]}, {
@@ -162,7 +297,7 @@ function createWindow () {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
-  createWindow()
+  createWindow('https://imjoy.io/#/app')
 })
 
 // Quit when all windows are closed.
@@ -172,13 +307,25 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+
+  if(processes.length>0){
+    try {
+      console.log(`killing ${processes.length} processes...`)
+      for(let p of processes){
+        p.kill()
+      }
+    } catch (e) {
+      console.error('error occured when killing porcesses')
+    }
+  }
+
 })
 
 app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow()
+  if (appWindows.length <= 0) {
+    createWindow('https://imjoy.io/#/app')
   }
 })
 

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<style>
+			*{
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body{
+				margin: 20px;
+				margin-bottom: 0;
+				font: 13px normal Verdana, Arial, "sans-serif";
+			}
+
+			#text{
+				height: 26px;
+				overflow: auto;
+				font-size: 14px;
+				font-weight: bold;
+				padding: 5px 0;
+				word-break: break-all;
+			}
+
+			#detail{
+				height: 40px;
+				margin: 5px 0;
+				padding: 5px 0;
+				word-break: break-all;
+			}
+
+			#logContainer{
+				height: 250px;
+				margin: 5px 0;
+				padding: 5px 0;
+				word-break: break-all;
+				overflow: auto;
+			}
+
+			#progressBarContainer{
+				text-align: center;
+			}
+			.btn-group button {
+			    background-color: #448aff; /* Green background */
+			    border: 1px solid white; /* Green border */
+			    color: white; /* White text */
+			    margin: 3px;
+			    padding: 10px 24px; /* Some padding */
+			    cursor: pointer; /* Pointer/hand icon */
+			    float: left; /* Float the buttons side by side */
+			}
+
+			/* Clear floats (clearfix hack) */
+			.btn-group:after {
+			    content: "";
+			    clear: both;
+			    display: table;
+			}
+
+			.btn-group button:not(:last-child) {
+			    border-right: none; /* Prevent double borders */
+			}
+
+			/* Add a background color on hover */
+			.btn-group button:hover {
+			    background-color: #ff5253;
+			}
+			progress{
+				-webkit-appearance: none;
+				appearance: none;
+				width: 100%;
+				height: 25px;
+			}
+
+			progress::-webkit-progress-bar{
+				width: 100%;
+				box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+				border-radius: 2px;
+				background: #DEDEDE;
+			}
+
+			progress::-webkit-progress-value{
+				box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+				border-radius: 2px;
+				background: #22328C;
+			}
+
+			#progressBar[indeterminate="t"]{
+				overflow: hidden;
+				position: relative;
+				display: block;
+				margin: 0.5rem 0 1rem 0;
+				width: 100%;
+				height: 10px;
+				border-radius: 2px;
+				background-color: #DEDEDE;
+				background-clip: padding-box;
+			}
+
+			#progressBar[indeterminate="t"] #progressBarValue::before{
+				content: "";
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				will-change: left, right;
+				background: inherit;
+			}
+
+			#progressBar[indeterminate="t"] #progressBarValue::before{
+				-webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+				animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+			}
+
+			#progressBar[indeterminate="t"] #progressBarValue::after{
+				content: "";
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				will-change: left, right;
+				background: inherit;
+			}
+
+			#progressBar[indeterminate="t"] #progressBarValue::after{
+				-webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+				animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+				-webkit-animation-delay: 1.15s;
+				animation-delay: 1.15s;
+			}
+
+			#progressBar[indeterminate="t"].completed #progressBarValue::before,
+			#progressBar[indeterminate="t"].completed #progressBarValue::after{
+				display: none;
+			}
+
+			.completed#progressBar[indeterminate="t"],
+			.completed#progressBar[indeterminate="t"] #progressBarValue{
+				-webkit-transition: 0.5s;
+				transition: 0.5s;
+			}
+
+			@-webkit-keyframes indeterminate{
+				0%{ left: -35%; right: 100%; }
+				60%{ left: 100%; right: -90%; }
+				100%{ left: 100%; right: -90%; }
+			}
+
+			@keyframes indeterminate{
+				0%{ left: -35%; right: 100%; }
+				60%{ left: 100%; right: -90%; }
+				100%{ left: 100%; right: -90%; }
+			}
+
+			@-webkit-keyframes indeterminate-short{
+				0%{ left: -200%; right: 100%; }
+				60%{ left: 107%; right: -8%; }
+				100%{ left: 107%; right: -8%; }
+			}
+
+			@keyframes indeterminate-short{
+				0%{ left: -200%; right: 100%; }
+				60%{ left: 107%; right: -8%; }
+				100%{ left: 107%; right: -8%; }
+			}
+
+			.log {
+			  white-space: pre-wrap;
+			  color: black;
+			  font-size: 0.85em;
+			  background: inherit;
+			  border: 0;
+			  padding: 0;
+			}
+
+			.log .inner-line {
+			  padding: 0 15px;
+			  margin-left: 84pt;
+			  text-indent: -84pt;
+			  margin-bottom: 0;
+			}
+
+			.log .inner-line:empty::after {
+			  content: '.';
+			  visibility: hidden;
+			}
+
+			.log.no-indent .inner-line {
+			  margin-left: 0;
+			  text-indent: 0;
+			}
+
+			.log .line-error {
+			  background-color: #FF0000;
+			}
+
+			.log .line-selected {
+			  background-color: #ffb2b0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="text"></div>
+		<div id="progressBarContainer"></div>
+		<div id="detail"></div>
+		<div id="logContainer"></div>
+		<div class="btn-group">
+			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {hide: true})">Hide</button>
+			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {exit: true})">Exit</button>
+		</div>
+		<script>
+			var _isScrolledBottom = function(elem) {
+				var currentScroll = elem.scrollTop;
+				var totalHeight = elem.offsetHeight;
+				var clientHeight = elem.clientHeight; // eslint-disable-line
+				return totalHeight <= currentScroll + clientHeight;
+			};
+
+			var currentValue = {
+				progress : null,
+				text : null,
+				detail : null
+			};
+
+			var elements = {
+				text : document.querySelector("#text"),
+				detail : document.querySelector("#detail"),
+				progressBarContainer : document.querySelector("#progressBarContainer"),
+				progressBar : null, // set by createProgressBar()
+				logContainer: document.querySelector("#logContainer"),
+			};
+
+			function createProgressBar(settings){
+				if(settings.indeterminate){
+					var progressBar = document.createElement("div");
+					progressBar.setAttribute("id", "progressBar");
+					progressBar.setAttribute("indeterminate", "t");
+
+					var progressBarValue = document.createElement("div");
+					progressBarValue.setAttribute("id", "progressBarValue");
+					progressBar.appendChild(progressBarValue);
+
+					elements.progressBar = progressBar;
+					elements.progressBarContainer.appendChild(elements.progressBar);
+				}else{
+					var progressBar = document.createElement("progress");
+					progressBar.setAttribute("id", "progressBar");
+					progressBar.max = settings.maxValue;
+
+					elements.progressBar = progressBar;
+					elements.progressBarContainer.appendChild(elements.progressBar);
+				}
+
+				window.requestAnimationFrame(synchronizeUi);
+			}
+
+			function sendCommand(cmd, arg){
+				require("electron").ipcRenderer.send(cmd, arg)
+			}
+			function append_log(data, isError){
+				currentValue.detail = data.slice(0, 100);
+				var _logContainer = elements.logContainer;
+				var _linesLimit = 500;
+				var wasScrolledBottom = _isScrolledBottom(_logContainer);
+				var div = document.createElement('div');
+				var p = document.createElement('p');
+				p.className = 'inner-line';
+
+				// convert ansi color codes to html && escape HTML tags
+				data = ansi_up.escape_for_html(data); // eslint-disable-line
+				data = ansi_up.ansi_to_html(data); // eslint-disable-line
+				p.innerHTML = data; //_highlightWord(data);
+
+				if(isError){
+					div.className = 'line-error';
+				}
+				else{
+					div.className = 'line';
+				}
+
+				// div = _highlightLine(data, div);
+				div.addEventListener('click', function click() {
+					if (this.className.indexOf('selected') === -1) {
+						this.className = 'line-selected';
+					} else {
+						if(isError){
+							div.className = 'line-error';
+						}
+						else{
+							div.className = 'line';
+						}
+					}
+				});
+
+
+
+				div.appendChild(p);
+
+				_logContainer.appendChild(div);
+				if (_logContainer.children.length > _linesLimit) {
+					_logContainer.removeChild(_logContainer.children[0]);
+				}
+
+				if (wasScrolledBottom) {
+					_logContainer.scrollTo(0, _logContainer.scrollHeight);
+				}
+			}
+
+			function synchronizeUi(){
+				elements.progressBar.value = currentValue.progress;
+				elements.text.innerHTML = currentValue.text;
+				elements.detail.innerHTML = currentValue.detail;
+				window.requestAnimationFrame(synchronizeUi);
+			}
+
+			require("electron").ipcRenderer.on("ENGINE_DIALOG_RESULT", (event, value) => {
+				console.log(value)
+			});
+
+			require("electron").ipcRenderer.on("CREATE_PROGRESS_BAR", (event, settings) => {
+				createProgressBar(settings);
+			});
+
+			require("electron").ipcRenderer.on("SET_PROGRESS", (event, value) => {
+				currentValue.progress = value;
+			});
+
+			require("electron").ipcRenderer.on("SET_COMPLETED", (event) => {
+				elements.progressBar.classList.add('completed');
+			});
+
+			require("electron").ipcRenderer.on("SET_TEXT", (event, value) => {
+				currentValue.text = value;
+			});
+
+			require("electron").ipcRenderer.on("SET_DETAIL", (event, value) => {
+				currentValue.detail = value;
+			});
+
+			require("electron").ipcRenderer.on("LOG", (event, value) => {
+				append_log(value, false)
+			});
+			require("electron").ipcRenderer.on("ERROR", (event, value) => {
+				append_log(value, true)
+			});
+		</script>
+		<script>
+		// ansi_up.js
+		// version : 1.3.0
+		// author : Dru Nelson
+		// license : MIT
+		// http://github.com/drudru/ansi_up
+
+		(function (Date, undefined) {
+
+		    var ansi_up,
+		        VERSION = "1.3.0",
+
+		        // check for nodeJS
+		        hasModule = (typeof module !== 'undefined'),
+
+		        // Normal and then Bright
+		        ANSI_COLORS = [
+		          [
+		            { color: "0, 0, 0",        'class': "ansi-black"   },
+		            { color: "187, 0, 0",      'class': "ansi-red"     },
+		            { color: "0, 187, 0",      'class': "ansi-green"   },
+		            { color: "187, 187, 0",    'class': "ansi-yellow"  },
+		            { color: "0, 0, 187",      'class': "ansi-blue"    },
+		            { color: "187, 0, 187",    'class': "ansi-magenta" },
+		            { color: "0, 187, 187",    'class': "ansi-cyan"    },
+		            { color: "255,255,255",    'class': "ansi-white"   }
+		          ],
+		          [
+		            { color: "85, 85, 85",     'class': "ansi-bright-black"   },
+		            { color: "255, 85, 85",    'class': "ansi-bright-red"     },
+		            { color: "0, 255, 0",      'class': "ansi-bright-green"   },
+		            { color: "255, 255, 85",   'class': "ansi-bright-yellow"  },
+		            { color: "85, 85, 255",    'class': "ansi-bright-blue"    },
+		            { color: "255, 85, 255",   'class': "ansi-bright-magenta" },
+		            { color: "85, 255, 255",   'class': "ansi-bright-cyan"    },
+		            { color: "255, 255, 255",  'class': "ansi-bright-white"   }
+		          ]
+		        ],
+
+		        // 256 Colors Palette
+		        PALETTE_COLORS;
+
+		    function Ansi_Up() {
+		      this.fg = this.bg = this.fg_truecolor = this.bg_truecolor = null;
+		      this.bright = 0;
+		    }
+
+		    Ansi_Up.prototype.setup_palette = function() {
+		      PALETTE_COLORS = [];
+		      // Index 0..15 : System color
+		      (function() {
+		        var i, j;
+		        for (i = 0; i < 2; ++i) {
+		          for (j = 0; j < 8; ++j) {
+		            PALETTE_COLORS.push(ANSI_COLORS[i][j]['color']);
+		          }
+		        }
+		      })();
+
+		      // Index 16..231 : RGB 6x6x6
+		      // https://gist.github.com/jasonm23/2868981#file-xterm-256color-yaml
+		      (function() {
+		        var levels = [0, 95, 135, 175, 215, 255];
+		        var format = function (r, g, b) { return levels[r] + ', ' + levels[g] + ', ' + levels[b] };
+		        var r, g, b;
+		        for (r = 0; r < 6; ++r) {
+		          for (g = 0; g < 6; ++g) {
+		            for (b = 0; b < 6; ++b) {
+		              PALETTE_COLORS.push(format.call(this, r, g, b));
+		            }
+		          }
+		        }
+		      })();
+
+		      // Index 232..255 : Grayscale
+		      (function() {
+		        var level = 8;
+		        var format = function(level) { return level + ', ' + level + ', ' + level };
+		        var i;
+		        for (i = 0; i < 24; ++i, level += 10) {
+		          PALETTE_COLORS.push(format.call(this, level));
+		        }
+		      })();
+		    };
+
+		    Ansi_Up.prototype.escape_for_html = function (txt) {
+		      return txt.replace(/[&<>]/gm, function(str) {
+		        if (str == "&") return "&amp;";
+		        if (str == "<") return "&lt;";
+		        if (str == ">") return "&gt;";
+		      });
+		    };
+
+		    Ansi_Up.prototype.linkify = function (txt) {
+		      return txt.replace(/(https?:\/\/[^\s]+)/gm, function(str) {
+		        return "<a href=\"" + str + "\">" + str + "</a>";
+		      });
+		    };
+
+		    Ansi_Up.prototype.ansi_to_html = function (txt, options) {
+		      return this.process(txt, options, true);
+		    };
+
+		    Ansi_Up.prototype.ansi_to_text = function (txt) {
+		      var options = {};
+		      return this.process(txt, options, false);
+		    };
+
+		    Ansi_Up.prototype.process = function (txt, options, markup) {
+		      var self = this;
+		      var raw_text_chunks = txt.split(/\033\[/);
+		      var first_chunk = raw_text_chunks.shift(); // the first chunk is not the result of the split
+
+		      var color_chunks = raw_text_chunks.map(function (chunk) {
+		        return self.process_chunk(chunk, options, markup);
+		      });
+
+		      color_chunks.unshift(first_chunk);
+
+		      return color_chunks.join('');
+		    };
+
+		    Ansi_Up.prototype.process_chunk = function (text, options, markup) {
+
+		      // Are we using classes or styles?
+		      options = typeof options == 'undefined' ? {} : options;
+		      var use_classes = typeof options.use_classes != 'undefined' && options.use_classes;
+		      var key = use_classes ? 'class' : 'color';
+
+		      // Each 'chunk' is the text after the CSI (ESC + '[') and before the next CSI/EOF.
+		      //
+		      // This regex matches four groups within a chunk.
+		      //
+		      // The first and third groups match code type.
+		      // We supported only SGR command. It has empty first group and 'm' in third.
+		      //
+		      // The second group matches all of the number+semicolon command sequences
+		      // before the 'm' (or other trailing) character.
+		      // These are the graphics or SGR commands.
+		      //
+		      // The last group is the text (including newlines) that is colored by
+		      // the other group's commands.
+		      var matches = text.match(/^([!\x3c-\x3f]*)([\d;]*)([\x20-\x2c]*[\x40-\x7e])([\s\S]*)/m);
+
+		      if (!matches) return text;
+
+		      var orig_txt = matches[4];
+		      var nums = matches[2].split(';');
+
+		      // We currently support only "SGR" (Select Graphic Rendition)
+		      // Simply ignore if not a SGR command.
+		      if (matches[1] !== '' || matches[3] !== 'm') {
+		        return orig_txt;
+		      }
+
+		      if (!markup) {
+		        return orig_txt;
+		      }
+
+		      var self = this;
+
+		      while (nums.length > 0) {
+		        var num_str = nums.shift();
+		        var num = parseInt(num_str);
+
+		        if (isNaN(num) || num === 0) {
+		          self.fg = self.bg = null;
+		          self.bright = 0;
+		        } else if (num === 1) {
+		          self.bright = 1;
+		        } else if (num == 39) {
+		          self.fg = null;
+		        } else if (num == 49) {
+		          self.bg = null;
+		        } else if ((num >= 30) && (num < 38)) {
+		          self.fg = ANSI_COLORS[self.bright][(num % 10)][key];
+		        } else if ((num >= 90) && (num < 98)) {
+		          self.fg = ANSI_COLORS[1][(num % 10)][key];
+		        } else if ((num >= 40) && (num < 48)) {
+		          self.bg = ANSI_COLORS[0][(num % 10)][key];
+		        } else if ((num >= 100) && (num < 108)) {
+		          self.bg = ANSI_COLORS[1][(num % 10)][key];
+		        } else if (num === 38 || num === 48) { // extend color (38=fg, 48=bg)
+		          (function() {
+		            var is_foreground = (num === 38);
+		            if (nums.length >= 1) {
+		              var mode = nums.shift();
+		              if (mode === '5' && nums.length >= 1) { // palette color
+		                var palette_index = parseInt(nums.shift());
+		                if (palette_index >= 0 && palette_index <= 255) {
+		                  if (!use_classes) {
+		                    if (!PALETTE_COLORS) {
+		                      self.setup_palette.call(self);
+		                    }
+		                    if (is_foreground) {
+		                      self.fg = PALETTE_COLORS[palette_index];
+		                    } else {
+		                      self.bg = PALETTE_COLORS[palette_index];
+		                    }
+		                  } else {
+		                    var klass = (palette_index >= 16)
+		                          ? ('ansi-palette-' + palette_index)
+		                          : ANSI_COLORS[palette_index > 7 ? 1 : 0][palette_index % 8]['class'];
+		                    if (is_foreground) {
+		                      self.fg = klass;
+		                    } else {
+		                      self.bg = klass;
+		                    }
+		                  }
+		                }
+		              } else if(mode === '2' && nums.length >= 3) { // true color
+		                var r = parseInt(nums.shift());
+		                var g = parseInt(nums.shift());
+		                var b = parseInt(nums.shift());
+		                if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
+		                  var color = r + ', ' + g + ', ' + b;
+		                  if (!use_classes) {
+		                    if (is_foreground) {
+		                      self.fg = color;
+		                    } else {
+		                      self.bg = color;
+		                    }
+		                  } else {
+		                    if (is_foreground) {
+		                      self.fg = 'ansi-truecolor';
+		                      self.fg_truecolor = color;
+		                    } else {
+		                      self.bg = 'ansi-truecolor';
+		                      self.bg_truecolor = color;
+		                    }
+		                  }
+		                }
+		              }
+		            }
+		          })();
+		        }
+		      }
+
+		      if ((self.fg === null) && (self.bg === null)) {
+		        return orig_txt;
+		      } else {
+		        var styles = [];
+		        var classes = [];
+		        var data = {};
+		        var render_data = function (data) {
+		          var fragments = [];
+		          var key;
+		          for (key in data) {
+		            if (data.hasOwnProperty(key)) {
+		              fragments.push('data-' + key + '="' + this.escape_for_html(data[key]) + '"');
+		            }
+		          }
+		          return fragments.length > 0 ? ' ' + fragments.join(' ') : '';
+		        };
+
+		        if (self.fg) {
+		          if (use_classes) {
+		            classes.push(self.fg + "-fg");
+		            if (self.fg_truecolor !== null) {
+		              data['ansi-truecolor-fg'] = self.fg_truecolor;
+		              self.fg_truecolor = null;
+		            }
+		          } else {
+		            styles.push("color:rgb(" + self.fg + ")");
+		          }
+		        }
+		        if (self.bg) {
+		          if (use_classes) {
+		            classes.push(self.bg + "-bg");
+		            if (self.bg_truecolor !== null) {
+		              data['ansi-truecolor-bg'] = self.bg_truecolor;
+		              self.bg_truecolor = null;
+		            }
+		          } else {
+		            styles.push("background-color:rgb(" + self.bg + ")");
+		          }
+		        }
+		        if (use_classes) {
+		          return '<span class="' + classes.join(' ') + '"' + render_data.call(self, data) + '>' + orig_txt + '</span>';
+		        } else {
+		          return '<span style="' + styles.join(';') + '"' + render_data.call(self, data) + '>' + orig_txt + '</span>';
+		        }
+		      }
+		    };
+
+		    // Module exports
+		    ansi_up = {
+
+		      escape_for_html: function (txt) {
+		        var a2h = new Ansi_Up();
+		        return a2h.escape_for_html(txt);
+		      },
+
+		      linkify: function (txt) {
+		        var a2h = new Ansi_Up();
+		        return a2h.linkify(txt);
+		      },
+
+		      ansi_to_html: function (txt, options) {
+		        var a2h = new Ansi_Up();
+		        return a2h.ansi_to_html(txt, options);
+		      },
+
+		      ansi_to_text: function (txt) {
+		        var a2h = new Ansi_Up();
+		        return a2h.ansi_to_text(txt);
+		      },
+
+		      ansi_to_html_obj: function () {
+		        return new Ansi_Up();
+		      }
+		    };
+
+		    // CommonJS module is defined
+		    if (hasModule) {
+		        module.exports = ansi_up;
+		    }
+		    /*global ender:false */
+		    if (typeof window !== 'undefined' && typeof ender === 'undefined') {
+		        window.ansi_up = ansi_up;
+		    }
+		    /*global define:false */
+		    if (typeof define === "function" && define.amd) {
+		        define("ansi_up", [], function () {
+		            return ansi_up;
+		        });
+		    }
+		})(Date);
+
+		</script>
+	</body>
+</html>
