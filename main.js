@@ -315,9 +315,6 @@ function createWindow (url) {
           { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{
-            for(let p of processes){
-              p.kill()
-            }
             app.quit(); }}
       ]}, {
       label: "Edit",
@@ -353,6 +350,17 @@ app.on('ready', ()=>{
   createWindow('https://imjoy.io/#/app')
 })
 
+app.on('before-quit', (event) => {
+  if(engineDialog){
+    dialog.showMessageBox({message: "Please stop the Plugin Engine before quit."})
+    engineDialog.show()
+    event.preventDefault();
+    return;
+  }
+  for(let p of processes){
+    p.kill()
+  }
+})
 // app.on('quit', ()=>{
 //
 // })
@@ -364,20 +372,6 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-  engineDialog.setCompleted()
-  engineDialog.close()
-  engineDialog = null
-  if(processes.length>0){
-    try {
-      console.log(`killing ${processes.length} processes...`)
-      for(let p of processes){
-        p.kill()
-      }
-    } catch (e) {
-      console.error('error occured when killing porcesses')
-    }
-  }
-
 })
 
 app.on('activate', function () {
