@@ -16,7 +16,7 @@ let engineProcess = null
 // be closed automatically when the JavaScript object is garbage collected.
 const appWindows = []
 const HOME = os.homedir()
-const InstallDir = path.join(HOME, "ImJoyAppX")
+const InstallDir = path.join(HOME, "ImJoyApp")
 const processes = []
 process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
 `${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
