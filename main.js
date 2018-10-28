@@ -273,7 +273,7 @@ function createWindow (url) {
           { label: "New ImJoy Instance", click: ()=>{ createWindow('https://imjoy.io/#/app') }},
           { label: "About ImJoy", click: ()=>{ createWindow('https://imjoy.io/#/about') }},
           { type: "separator" },
-          { label: "Install ImJoy Plugin Engine", click: ()=>{const ed = initEngineDialog(mainWindow); installImJoyEngine(ed)}},
+          // { label: "Install ImJoy Plugin Engine", click: ()=>{const ed = initEngineDialog(mainWindow); installImJoyEngine(ed)}},
           { label: "ImJoy Plugin Engine", accelerator: "CmdOrCtrl+I", click: ()=>{startImJoyEngine(mainWindow)}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{ app.quit(); }}
