@@ -337,6 +337,47 @@ function terminateImJoyEngine(){
   }
 }
 
+function setAppMenu(mainWindow){
+  // Create the Application's main menu
+  const template = [{
+      label: "ImJoy",
+      submenu: [
+          { label: "About ImJoy", click: ()=>{ createWindow('/#/about') }},
+          { label: "Welcome Dialog", accelerator: "CmdOrCtrl+W", click: ()=>{ createWelcomeDialog() }},
+          { type: "separator" },
+          { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ if(mainWindow) mainWindow.reload() }},
+          { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
+          { type: "separator" },
+          { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
+          { type: "separator" },
+          { label: "Quit", accelerator: "Command+Q", click: ()=>{
+            app.quit(); }}
+      ]}, {
+      label: "Edit",
+      submenu: [
+          { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+          { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+          { type: "separator" },
+          { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+          { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+          { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+          { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+      ]}, {
+      label: "ImJoyEngine",
+      submenu: [
+        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
+        { type: "separator" },
+        { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
+      ]}, {
+      label: "Help",
+      submenu: [
+        { label: "ImJoy Docs", click: ()=>{ createWindow('/docs') }}
+      ]}
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 function switchToOffline(mainWindow){
   serverEnabled = true;
   const startEngine = ()=>{
@@ -384,6 +425,7 @@ function createWelcomeDialog () {
     // }
   })
   welcomeDialog.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
+  setAppMenu()
 }
 
 function createWindow (route_path) {
@@ -420,45 +462,7 @@ function createWindow (route_path) {
   })
 
   appWindows.push(mainWindow)
-  // Create the Application's main menu
-  const template = [{
-      label: "ImJoy",
-      submenu: [
-          { label: "About ImJoy", click: ()=>{ createWindow('/#/about') }},
-          { label: "Welcome Dialog", accelerator: "CmdOrCtrl+W", click: ()=>{ createWelcomeDialog() }},
-          { type: "separator" },
-          { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ mainWindow.reload() }},
-          { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
-          { type: "separator" },
-          { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
-          { type: "separator" },
-          { label: "Quit", accelerator: "Command+Q", click: ()=>{
-            app.quit(); }}
-      ]}, {
-      label: "Edit",
-      submenu: [
-          { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-          { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-          { type: "separator" },
-          { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-          { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-          { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-          { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
-      ]}, {
-      label: "ImJoyEngine",
-      submenu: [
-        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
-        { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
-        { type: "separator" },
-        { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
-      ]}, {
-      label: "Help",
-      submenu: [
-        { label: "ImJoy Docs", click: ()=>{ createWindow('/docs') }}
-      ]}
-  ];
-
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  setAppMenu(mainWindow)
 }
 
 // This method will be called when Electron has finished
