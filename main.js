@@ -75,13 +75,31 @@ function executeCmd(label, cmd, param, ed, callback) {
     const p = child_process.spawn(cmd, param);
     if(callback) callback(p);
     processes.push(p)
+    let backlog_out = ''
     p.stdout.on('data',function(data){
-        ed.log(data.toString('utf8'));
+      backlog_out += data.toString('utf8')
+      var n = backlog_out.indexOf('\n')
+      // got a \n? emit one or more 'line' events
+      while (~n) {
+        ed.log(backlog_out.substring(0, n));
+        backlog_out = backlog_out.substring(n + 1)
+        n = backlog_out.indexOf('\n')
+      }
     });
+    let backlog_err = ''
     p.stderr.on('data',function(data){
-        ed.error(data.toString('utf8'));
+      backlog_err += data.toString('utf8')
+      var n = backlog_err.indexOf('\n')
+      // got a \n? emit one or more 'line' events
+      while (~n) {
+        ed.error(backlog_err.substring(0, n));
+        backlog_err = backlog_err.substring(n + 1)
+        n = backlog_err.indexOf('\n')
+      }
     });
     p.on('close', (code, signal) => {
+      backlog_out = null
+      backlog_err = null
       //remove the process
       const index = processes.indexOf(p);
       if (index > -1) {
