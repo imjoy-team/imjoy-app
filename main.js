@@ -335,6 +335,7 @@ function terminateImJoyEngine(){
   for(let p of processes){
     p.kill()
   }
+  serverEnabled = false
 }
 
 function setAppMenu(mainWindow){
