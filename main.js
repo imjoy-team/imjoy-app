@@ -396,7 +396,7 @@ function createWindow (route_path) {
       ]}, {
       label: "ImJoyEngine",
       submenu: [
-        { label: "Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
         { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
         { type: "separator" },
         { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
