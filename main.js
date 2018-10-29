@@ -8,7 +8,7 @@ const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
-const EngineDialog = require('./imjoy_engine_dialog')
+const EngineDialog = require('./asserts/imjoy_engine_dialog')
 let engineDialog = null
 let engineProcess = null
 
@@ -323,7 +323,7 @@ function createWindow (route_path) {
     title: `ImJoy App (${serverUrl})`,
     webPreferences: {
         nodeIntegration: false,
-        preload: path.join(__dirname, 'preload.js')
+        preload: path.join(__dirname, 'asserts', 'preload.js')
     }
   })
   // and load the index.html of the app.
