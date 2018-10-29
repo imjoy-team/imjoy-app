@@ -18,6 +18,8 @@ const appWindows = []
 const HOME = os.homedir()
 const InstallDir = path.join(HOME, "ImJoyApp")
 const processes = []
+let quitting = false
+
 process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
 `${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
 
@@ -91,6 +93,9 @@ function executeCmd(label, cmd, param, ed, callback) {
         ed.log(`Process '${label}' exited with code: ${code})`)
         reject(`Process '${label}' exited with code: ${code})`)
       }
+      if(processes.length <= 0 && quitting){
+        app.quit()
+      }
     })
   })
 }
@@ -107,18 +112,7 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
   }
   else if(arg.exit){
     try {
-      if(processes.length == 0){
-        if(engineDialog){
-          engineDialog.setCompleted()
-          engineDialog.close()
-          engineDialog = null
-        }
-      }
-      else{
-        for(let p of processes){
-          p.kill()
-        }
-      }
+      terminateImJoyEngine()
       event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
     } catch (e) {
       event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
@@ -275,6 +269,15 @@ function startImJoyEngine(appWindow) {
   }
 }
 
+function terminateImJoyEngine(){
+  if(engineProcess){
+    engineProcess.kill()
+  }
+  for(let p of processes){
+    p.kill()
+  }
+}
+
 function createWindow (url) {
   // Create the browser window.
   let mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico',
@@ -351,14 +354,10 @@ app.on('ready', ()=>{
 })
 
 app.on('before-quit', (event) => {
-  if(engineDialog){
-    dialog.showMessageBox({message: "Please stop the Plugin Engine before quit."})
-    engineDialog.show()
+  if(processes.length > 0){
+    terminateImJoyEngine()
+    quitting = true
     event.preventDefault();
-    return;
-  }
-  for(let p of processes){
-    p.kill()
   }
 })
 // app.on('quit', ()=>{
