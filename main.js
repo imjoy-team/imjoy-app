@@ -426,6 +426,9 @@ function createWelcomeDialog () {
     // }
   })
   welcomeDialog.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
+  welcomeDialog.on('closed', () => {
+      welcomeDialog = null
+  })
 }
 
 function createWindow (route_path) {
