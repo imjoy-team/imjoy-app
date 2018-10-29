@@ -18,7 +18,9 @@ const appWindows = []
 const HOME = os.homedir()
 const InstallDir = path.join(HOME, "ImJoyApp")
 const processes = []
-let quitting = false
+let processEndCallback = null
+let engineEndCallback = null
+let serverEnabled = false
 
 process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
 `${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
@@ -93,8 +95,8 @@ function executeCmd(label, cmd, param, ed, callback) {
         ed.log(`Process '${label}' exited with code: ${code})`)
         reject(`Process '${label}' exited with code: ${code})`)
       }
-      if(processes.length <= 0 && quitting){
-        app.quit()
+      if(processes.length <= 0){
+        if(processEndCallback) processEndCallback()
       }
     })
   })
@@ -245,16 +247,25 @@ function startImJoyEngine(appWindow) {
   engineDialog.show()
   if(engineProcess) return;
   if(checkEngineExists()){
-    executeCmd("ImJoy Plugin Engine", "python", ['-m', 'imjoy'], engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
+    const args = ['-m', 'imjoy']
+    if(serverEnabled){
+      args.push('--serve')
+    }
+    engineEndCallback = null
+    executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
       console.error(e)
+      engineProcess = null
       dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
     }).finally(()=>{
+      engineProcess = null
       if(engineDialog){
         engineDialog.setCompleted()
         engineDialog.close()
         engineDialog = null
       }
-      engineProcess = null
+      if(engineEndCallback){
+        engineEndCallback()
+      }
     })
   }
   else{
@@ -278,9 +289,14 @@ function terminateImJoyEngine(){
   }
 }
 
-function createWindow (url) {
+function createWindow (route_path) {
+  let serverUrl = 'https://imjoy.io';
+  if(serverEnabled){
+    serverUrl = 'http://127.0.0.1:8080'
+  }
   // Create the browser window.
   let mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico',
+    title: `ImJoy App (${serverUrl})`,
     webPreferences: {
         nodeIntegration: false,
         preload: path.join(__dirname, 'preload.js')
@@ -288,7 +304,7 @@ function createWindow (url) {
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
-  mainWindow.loadURL(url);
+  mainWindow.loadURL(serverUrl+route_path);
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -311,11 +327,35 @@ function createWindow (url) {
   const template = [{
       label: "ImJoy",
       submenu: [
-          { label: "About ImJoy", click: ()=>{ createWindow('https://imjoy.io/#/about') }},
+          { label: "About ImJoy", click: ()=>{ createWindow('/#/about') }},
           { type: "separator" },
-          { label: "New ImJoy Instance", click: ()=>{ createWindow('https://imjoy.io/#/app') }},
+          { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ mainWindow.reload() }},
+          { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
           { type: "separator" },
-          { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
+          { label: "Switch to offline mode", click: ()=>{
+            serverEnabled = true;
+            const startEngine = ()=>{
+              startImJoyEngine(mainWindow);
+              setTimeout(()=>{
+                if(engineProcess){
+                  dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
+                  createWindow('/#/app');
+                }
+                else{
+                  dialog.showMessageBox({title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
+                }
+              }, 5000)
+            }
+            mainWindow.close();
+            if(engineDialog) engineDialog.show();
+            if(engineProcess){
+              engineEndCallback = startEngine
+              terminateImJoyEngine()
+            }
+            else{
+              startEngine()
+            }
+          }},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{
             app.quit(); }}
@@ -332,14 +372,14 @@ function createWindow (url) {
       ]}, {
       label: "ImJoyEngine",
       submenu: [
-        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { label: "Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
         { type: "separator" },
-        { label: "Show Engine Dialog", click: ()=>{ if(engineDialog) {engineDialog.show()} else { startImJoyEngine(mainWindow) }}},
-        { label: "Hide Engine Dialog", click: ()=>{ if(engineDialog) engineDialog.hide() }}
+        { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
       ]}, {
       label: "Help",
       submenu: [
-        { label: "ImJoy Docs", click: ()=>{ createWindow('https://imjoy.io/docs') }}
+        { label: "ImJoy Docs", click: ()=>{ createWindow('/docs') }}
       ]}
   ];
 
@@ -350,13 +390,14 @@ function createWindow (url) {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
-  createWindow('https://imjoy.io/#/app')
+  processEndCallback = null
+  createWindow('/#/app')
 })
 
 app.on('before-quit', (event) => {
   if(processes.length > 0){
     terminateImJoyEngine()
-    quitting = true
+    processEndCallback = app.quit
     event.preventDefault();
   }
 })
@@ -377,7 +418,7 @@ app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (appWindows.length <= 0) {
-    createWindow('https://imjoy.io/#/app')
+    createWindow('/#/app')
   }
 })
 
