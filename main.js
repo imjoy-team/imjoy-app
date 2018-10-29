@@ -189,6 +189,7 @@ function initEngineDialog(config){
   })
   .on('aborted', function() {
     console.info(`aborted...`);
+    engineDialog = null
   })
 
   .on('progress', function(value) {
@@ -196,6 +197,7 @@ function initEngineDialog(config){
   });
 
   ed.hide()
+  engineDialog = ed
   return ed
 }
 
@@ -502,7 +504,8 @@ app.on('activate', function () {
   // dock icon is clicked and there are no other windows open.
   if (appWindows.length <= 0) {
     // createWindow('/#/app')
-    createWelcomeDialog()
+    if(engineDialog) engineDialog.show()
+    else createWelcomeDialog()
   }
 })
 
