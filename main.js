@@ -8,9 +8,10 @@ const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
-const EngineDialog = require('./asserts/imjoy_engine_dialog')
+const EngineDialog = require('./asserts/engine_dialog')
 let engineDialog = null
 let engineProcess = null
+let welcomeDialog = null
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -125,6 +126,29 @@ function executeCmd(label, cmd, param, ed, callback) {
     })
   })
 }
+
+ipcMain.on('START_CMD', (event, arg) => {
+  if(arg.close_welcome){
+    if(welcomeDialog){
+      welcomeDialog.close()
+      welcomeDialog = null
+    }
+  }
+
+  if(arg.start_app){
+    createWindow('/#/app')
+  }
+  else if(arg.start_engine){
+    startImJoyEngine()
+  }
+  else if(arg.run_offline){
+    switchToOffline()
+  }
+  else{
+    console.log("unsupported command", arg)
+  }
+
+})
 
 ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
   if(!engineDialog) {
@@ -313,13 +337,62 @@ function terminateImJoyEngine(){
   }
 }
 
+function switchToOffline(mainWindow){
+  serverEnabled = true;
+  const startEngine = ()=>{
+    startImJoyEngine(mainWindow);
+    setTimeout(()=>{
+      if(engineProcess){
+        dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
+        createWindow('/#/app');
+      }
+      else{
+        dialog.showMessageBox({title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
+      }
+    }, 5000)
+  }
+  if(mainWindow) mainWindow.close();
+  if(engineDialog) engineDialog.show();
+  if(engineProcess){
+    engineEndCallback = startEngine
+    terminateImJoyEngine()
+  }
+  else{
+    startEngine()
+  }
+}
+
+function createWelcomeDialog () {
+  if(welcomeDialog) {
+    welcomeDialog.close()
+    welcomeDialog = null
+  }
+  // Create the browser window.
+  welcomeDialog = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
+    title: "Welcome",
+    parent: null,
+    modal: true,
+    resizable: false,
+    closable: true,
+    minimizable: true,
+    maximizable: false,
+    width: 600,
+    height: 302,
+    // webPreferences: {
+    //     nodeIntegration: false,
+    //     preload: path.join(__dirname, 'asserts', 'preload.js')
+    // }
+  })
+  welcomeDialog.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
+}
+
 function createWindow (route_path) {
   let serverUrl = 'https://imjoy.io';
   if(serverEnabled){
     serverUrl = 'http://127.0.0.1:8080'
   }
   // Create the browser window.
-  let mainWindow = new BrowserWindow({icon: __dirname + '/utils/imjoy.ico',
+  let mainWindow = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
     title: `ImJoy App (${serverUrl})`,
     webPreferences: {
         nodeIntegration: false,
@@ -352,34 +425,12 @@ function createWindow (route_path) {
       label: "ImJoy",
       submenu: [
           { label: "About ImJoy", click: ()=>{ createWindow('/#/about') }},
+          { label: "Welcome Dialog", accelerator: "CmdOrCtrl+W", click: ()=>{ createWelcomeDialog() }},
           { type: "separator" },
           { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ mainWindow.reload() }},
           { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
           { type: "separator" },
-          { label: "Switch to offline mode", click: ()=>{
-            serverEnabled = true;
-            const startEngine = ()=>{
-              startImJoyEngine(mainWindow);
-              setTimeout(()=>{
-                if(engineProcess){
-                  dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
-                  createWindow('/#/app');
-                }
-                else{
-                  dialog.showMessageBox({title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
-                }
-              }, 5000)
-            }
-            mainWindow.close();
-            if(engineDialog) engineDialog.show();
-            if(engineProcess){
-              engineEndCallback = startEngine
-              terminateImJoyEngine()
-            }
-            else{
-              startEngine()
-            }
-          }},
+          { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{
             app.quit(); }}
@@ -415,7 +466,8 @@ function createWindow (route_path) {
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
   processEndCallback = null
-  createWindow('/#/app')
+  // createWindow('/#/app')
+  createWelcomeDialog()
 })
 
 app.on('before-quit', (event) => {
@@ -442,7 +494,8 @@ app.on('activate', function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (appWindows.length <= 0) {
-    createWindow('/#/app')
+    // createWindow('/#/app')
+    createWelcomeDialog()
   }
 })
 

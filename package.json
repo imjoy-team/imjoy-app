@@ -1,6 +1,6 @@
 {
   "name": "ImJoy",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "ImJoy Desktop App (with Plugin Engine)",
   "main": "main.js",
   "scripts": {
