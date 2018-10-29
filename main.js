@@ -78,7 +78,10 @@ function executeCmd(label, cmd, param, ed, callback) {
     let backlog_out = ''
     p.stdout.on('data',function(data){
       backlog_out += data.toString('utf8')
-      var n = backlog_out.indexOf('\n')
+      let n = backlog_out.indexOf('\n')
+      if(backlog_out.length>256){
+        n = backlog_out.length
+      }
       // got a \n? emit one or more 'line' events
       while (~n) {
         ed.log(backlog_out.substring(0, n));
@@ -89,7 +92,10 @@ function executeCmd(label, cmd, param, ed, callback) {
     let backlog_err = ''
     p.stderr.on('data',function(data){
       backlog_err += data.toString('utf8')
-      var n = backlog_err.indexOf('\n')
+      let n = backlog_err.indexOf('\n')
+      if(backlog_err.length>256){
+        n = backlog_err.length
+      }
       // got a \n? emit one or more 'line' events
       while (~n) {
         ed.error(backlog_err.substring(0, n));
