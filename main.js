@@ -425,7 +425,6 @@ function createWelcomeDialog () {
     // }
   })
   welcomeDialog.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
-  setAppMenu()
 }
 
 function createWindow (route_path) {
@@ -460,15 +459,15 @@ function createWindow (route_path) {
     }
     mainWindow = null
   })
-
-  appWindows.push(mainWindow)
   setAppMenu(mainWindow)
+  appWindows.push(mainWindow)
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
+  setAppMenu()
   processEndCallback = null
   // createWindow('/#/app')
   createWelcomeDialog()
