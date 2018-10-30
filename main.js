@@ -294,7 +294,9 @@ function installImJoyEngine(appWindow) {
           }
         }
       }
-
+      ed.on('close', function(event) {
+        event.preventDefault()
+      })
       runCmds().then(()=>{
         dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
         resolve()
@@ -395,7 +397,11 @@ function setAppMenu(mainWindow){
         { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
         { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
         { type: "separator" },
-        { label: "Install Plugin Engine", click: ()=>{installImJoyEngine(mainWindow)}},
+        { label: "Install Plugin Engine", click: ()=>{
+          installImJoyEngine(mainWindow).then(()=>{
+            startImJoyEngine(mainWindow)
+          })
+        }},
       ]}, {
       label: "Help",
       submenu: [
