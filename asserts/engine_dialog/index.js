@@ -34,7 +34,7 @@ class ProgressBar {
 			browserWindow: {
 				parent: null,
 				modal: true,
-				resizable: false,
+				resizable: true,
 				closable: true,
 				minimizable: true,
 				maximizable: false,

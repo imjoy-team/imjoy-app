@@ -199,19 +199,21 @@ function initEngineDialog(config){
   })
 
   .on('close', function(event) {
-    const dialogOptions = {type: 'info', buttons: ['Yes, terminate it', 'Cancel'], message: 'Are you sure to terminate the Plugin Engine?'}
-    event.preventDefault()
-    dialog.showMessageBox(dialogOptions, (choice) => {
-      if(choice == 0){
-        try {
-          engineExiting = true
-          terminateImJoyEngine()
-          event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
-        } catch (e) {
-          event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
+    if(engineProcess){
+      event.preventDefault()
+      const dialogOptions = {type: 'info', buttons: ['Yes, terminate it', 'Cancel'], message: 'Are you sure to terminate the Plugin Engine?'}
+      dialog.showMessageBox(dialogOptions, (choice) => {
+        if(choice == 0){
+          try {
+            engineExiting = true
+            terminateImJoyEngine()
+            event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
+          } catch (e) {
+            event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
+          }
         }
-      }
-    })
+      })
+    }
   });
 
   ed.hide()
