@@ -22,6 +22,7 @@ const processes = []
 let processEndCallback = null
 let engineEndCallback = null
 let serverEnabled = false
+let engineExiting = false
 
 process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
 `${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
@@ -128,13 +129,6 @@ function executeCmd(label, cmd, param, ed, callback) {
 }
 
 ipcMain.on('START_CMD', (event, arg) => {
-  if(arg.close_welcome){
-    if(welcomeDialog){
-      welcomeDialog.close()
-      welcomeDialog = null
-    }
-  }
-
   if(arg.start_app){
     createWindow('/#/app')
   }
@@ -146,6 +140,13 @@ ipcMain.on('START_CMD', (event, arg) => {
   }
   else{
     console.log("unsupported command", arg)
+  }
+
+  if(arg.close_welcome){
+    if(welcomeDialog){
+      welcomeDialog.close()
+      welcomeDialog = null
+    }
   }
 
 })
@@ -302,13 +303,14 @@ function startImJoyEngine(appWindow) {
       args.push('--serve')
     }
     engineEndCallback = null
+    engineExiting = false
     executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
       console.error(e)
       engineProcess = null
       dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
     }).finally(()=>{
       engineProcess = null
-      if(engineDialog){
+      if(engineDialog && engineExiting){
         engineDialog.setCompleted()
         engineDialog.close()
         engineDialog = null
@@ -338,6 +340,7 @@ function terminateImJoyEngine(){
     p.kill()
   }
   serverEnabled = false
+  engineExiting = true
 }
 
 function setAppMenu(mainWindow){
@@ -407,12 +410,8 @@ function switchToOffline(mainWindow){
 }
 
 function createWelcomeDialog () {
-  if(welcomeDialog) {
-    welcomeDialog.close()
-    welcomeDialog = null
-  }
   // Create the browser window.
-  welcomeDialog = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
+  const wd = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
     title: "Welcome",
     parent: null,
     modal: true,
@@ -427,10 +426,14 @@ function createWelcomeDialog () {
     //     preload: path.join(__dirname, 'asserts', 'preload.js')
     // }
   })
-  welcomeDialog.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
-  welcomeDialog.on('closed', () => {
+  wd.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
+  wd.on('closed', () => {
       welcomeDialog = null
   })
+  if(welcomeDialog) {
+    welcomeDialog.close()
+  }
+  welcomeDialog = wd
 }
 
 function createWindow (route_path) {
@@ -441,6 +444,8 @@ function createWindow (route_path) {
   // Create the browser window.
   let mainWindow = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
     title: `ImJoy App (${serverUrl})`,
+    width: 1024,
+    height: 768,
     webPreferences: {
         nodeIntegration: false,
         preload: path.join(__dirname, 'asserts', 'preload.js')
@@ -452,7 +457,7 @@ function createWindow (route_path) {
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
-  mainWindow.maximize()
+  // mainWindow.maximize()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -494,9 +499,10 @@ app.on('before-quit', (event) => {
 app.on('window-all-closed', function () {
   // On OS X it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  // if (process.platform !== 'darwin') {
+  // app.quit()
+  // }
+  app.quit()
 })
 
 app.on('activate', function () {
