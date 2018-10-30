@@ -6,9 +6,9 @@
   "scripts": {
     "start": "electron .",
     "build": "npm run package-mac; npm run package-linux; npm run package-win32",
-    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && hdiutil create -ov -format UDZO -srcfolder ImJoy-darwin-x64 ImJoy-darwin-x64.dmg || zip -r -X -q ImJoy-darwin-x64.zip ImJoy-darwin-x64",
-    "package-win32": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -r -X -q ImJoy-win32-x64.zip ImJoy-win32-x64",
-    "package-linux": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -r -X -q ImJoy-linux-x64.zip ImJoy-linux-x64"
+    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && hdiutil create -ov -format UDZO -srcfolder ImJoy-darwin-x64 ImJoy-darwin-x64.dmg || zip -r -X -q - ImJoy-darwin-x64 >ImJoy-darwin-x64.zip",
+    "package-win32": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -r -X -q - ImJoy-win32-x64 >ImJoy-win32-x64.zip",
+    "package-linux": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -r -X -q - ImJoy-linux-x64 >ImJoy-linux-x64.zip"
   },
   "repository": "https://github.com/oeway/ImJoy",
   "keywords": [
