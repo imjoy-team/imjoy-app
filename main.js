@@ -157,22 +157,23 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
     return;
   }
 
-  if(arg.show){
-    engineDialog.show()
-    event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
-  }
-  else if(arg.exit){
-    try {
-      terminateImJoyEngine()
-      event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
-    } catch (e) {
-      event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
-    }
-  }
-  else if(arg.hide){
-    engineDialog.hide()
-    event.sender.send('ENGINE_DIALOG_RESULT', {success: true, hide: true})
-  }
+  // if(arg.show){
+  //   engineDialog.show()
+  //   event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
+  // }
+  // else if(arg.exit){
+  //   try {
+  //     engineExiting = true
+  //     terminateImJoyEngine()
+  //     event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
+  //   } catch (e) {
+  //     event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
+  //   }
+  // }
+  // else if(arg.hide){
+  //   engineDialog.hide()
+  //   event.sender.send('ENGINE_DIALOG_RESULT', {success: true, hide: true})
+  // }
 })
 
 function initEngineDialog(config){
@@ -195,6 +196,22 @@ function initEngineDialog(config){
 
   .on('progress', function(value) {
     ed.log(value);
+  })
+
+  .on('close', function(event) {
+    const dialogOptions = {type: 'info', buttons: ['Yes, terminate it', 'Cancel'], message: 'Are you sure to terminate the Plugin Engine?'}
+    event.preventDefault()
+    dialog.showMessageBox(dialogOptions, (choice) => {
+      if(choice == 0){
+        try {
+          engineExiting = true
+          terminateImJoyEngine()
+          event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
+        } catch (e) {
+          event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
+        }
+      }
+    })
   });
 
   ed.hide()
@@ -231,7 +248,7 @@ function checkOldInstallation(){
 function installImJoyEngine(appWindow) {
   return new Promise((resolve, reject)=>{
     checkOldInstallation().then(()=>{
-      const ed = initEngineDialog({hideButtons: true, appWindow: appWindow})
+      const ed = initEngineDialog({appWindow: appWindow})
       ed.show()
       fs.mkdirSync(InstallDir);
       const cmds = [
@@ -307,9 +324,11 @@ function startImJoyEngine(appWindow) {
     executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
       console.error(e)
       engineProcess = null
-      dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
     }).finally(()=>{
       engineProcess = null
+      if(!engineExiting){
+        dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
+      }
       if(engineDialog && engineExiting){
         engineDialog.setCompleted()
         engineDialog.close()

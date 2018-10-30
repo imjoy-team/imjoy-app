@@ -10,7 +10,7 @@ class ProgressBar {
 		this._defaultOptions = {
 			abortOnError: false,
 			debug: false,
-
+			hideButtons: true,
 			indeterminate: true,
 			initialValue: 0,
 			maxValue: 100,
@@ -35,8 +35,8 @@ class ProgressBar {
 				parent: null,
 				modal: true,
 				resizable: false,
-				closable: false,
-				minimizable: false,
+				closable: true,
+				minimizable: true,
 				maximizable: false,
 				width: 600,
 				height: 450
@@ -62,7 +62,8 @@ class ProgressBar {
 			'ready': [], // list of function(){}
 			'progress': [], // list of function(value){}
 			'completed': [], // list of function(value){}
-			'aborted': [] // list of function(value){}
+			'aborted': [], // list of function(value){}
+			'close': [] // list of function(value){}
 		};
 
 		this._inProgress = true;
@@ -263,10 +264,10 @@ class ProgressBar {
 
 	_createWindow() {
 		if(this._options.hideButtons){
-			this._options.browserWindow.height = 400;
+			this._options.browserWindow.height = 420;
 		}
 		else{
-			this._options.browserWindow.height = 450;
+			this._options.browserWindow.height = 460;
 		}
 		this._window = new BrowserWindow(this._options.browserWindow);
 
@@ -275,6 +276,10 @@ class ProgressBar {
 		if(this._options.debug){
 			this._window.webContents.openDevTools({mode: 'detach'});
 		}
+
+		this._window.on('close', (event) => {
+			this._fire('close', [event]);
+		})
 
 		this._window.on('closed', () => {
 			this._inProgress = false;
