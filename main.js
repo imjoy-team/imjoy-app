@@ -372,7 +372,7 @@ function setAppMenu(mainWindow){
           { label: "About ImJoy", click: ()=>{ createWindow('/#/about') }},
           { label: "Welcome Dialog", accelerator: "CmdOrCtrl+W", click: ()=>{ createWelcomeDialog() }},
           { type: "separator" },
-          { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ if(mainWindow) mainWindow.reload() }},
+          { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ if(mainWindow && !mainWindow.closed) mainWindow.reload() }},
           { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
           { type: "separator" },
           { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
@@ -419,7 +419,7 @@ function switchToOffline(mainWindow){
       }
     }, 5000)
   }
-  if(mainWindow) mainWindow.close();
+  if(mainWindow && !mainWindow.closed) mainWindow.close();
   if(engineDialog) engineDialog.show();
   if(engineProcess){
     engineEndCallback = startEngine
