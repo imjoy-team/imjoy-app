@@ -421,7 +421,7 @@ function createWelcomeDialog () {
     minimizable: true,
     maximizable: false,
     width: 600,
-    height: 302,
+    height: 360,
     // webPreferences: {
     //     nodeIntegration: false,
     //     preload: path.join(__dirname, 'asserts', 'preload.js')
