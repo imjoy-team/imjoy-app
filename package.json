@@ -5,10 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "npm run package-mac; npm run package-linux64; npm run package-win64",
-    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite",
-    "package-win64": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite",
-    "package-linux64": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite"
+    "build": "npm run package-mac; npm run package-linux; npm run package-win32",
+    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && zip -r -X -q ./build/ImJoy-darwin-x64.zip ./build/ImJoy-darwin-x64",
+    "package-win32": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && zip -r -X -q ./build/ImJoy-win32-x64.zip ./build/ImJoy-win32-x64",
+    "package-linux": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && zip -r -X -q ./build/ImJoy-linux-x64.zip ./build/ImJoy-linux-x64"
   },
   "repository": "https://github.com/oeway/ImJoy",
   "keywords": [
