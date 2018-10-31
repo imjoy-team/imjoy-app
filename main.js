@@ -301,7 +301,7 @@ function installImJoyEngine(appWindow) {
         dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
         resolve()
       }).catch((e)=>{
-        dialog.showErrorBox("Failed to Install the Plugin Engine", e)
+        dialog.showErrorBox("Failed to Install the Plugin Engine", e + " You may want to try again or reinstall the Plugin Engine.")
         reject()
       }).finally(()=>{
         // ed.hide()
@@ -328,11 +328,11 @@ function startImJoyEngine(appWindow) {
     executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
       console.error(e)
       engineProcess = null
+      if(!engineExiting){
+        dialog.showMessageBox({title: "Plugin Engine Exited", message: e})
+      }
     }).finally(()=>{
       engineProcess = null
-      if(!engineExiting){
-        dialog.showMessageBox({title: "Plugin Engine Exited", message: "Plugin Engine Exited"})
-      }
       if(engineDialog && engineExiting){
         engineDialog.setCompleted()
         engineDialog.close()
