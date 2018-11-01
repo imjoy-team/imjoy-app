@@ -218,6 +218,7 @@ function initEngineDialog(config){
 
   ed.hide()
   engineDialog = ed
+  setAppMenu(engineDialog)
   return ed
 }
 
@@ -256,8 +257,8 @@ function installImJoyEngine(appWindow) {
       const cmds = [
         ['Replace User Site', 'python', ['-c', replace_user_site]],
         ['Install Git', 'conda', ['install', '-y', 'git']],
-        ['Upgrade PIP', 'pip', ['install', '-U', 'pip']],
-        ['Install ImJoy', 'pip', ['install', '-U', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+        ['Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
+        ['Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
       ]
 
       const runCmds = async ()=>{
@@ -312,7 +313,7 @@ function installImJoyEngine(appWindow) {
   })
 }
 
-function startImJoyEngine(appWindow) {
+function startImJoyEngine() {
   if(!engineDialog || engineDialog.isCompleted()){
     engineDialog = initEngineDialog()
   }
@@ -347,8 +348,8 @@ function startImJoyEngine(appWindow) {
     const dialogOptions = {type: 'info', buttons: ['Install', 'Cancel'], message: 'Plugin Engine not found! Would you like to setup Plugin Engine? This may take a while.'}
     dialog.showMessageBox(dialogOptions, (choice) => {
       if(choice == 0){
-        installImJoyEngine(appWindow).then(()=>{
-          startImJoyEngine(appWindow)
+        installImJoyEngine(engineDialog).then(()=>{
+          startImJoyEngine()
         })
       }
     })
@@ -394,12 +395,12 @@ function setAppMenu(mainWindow){
       ]}, {
       label: "ImJoyEngine",
       submenu: [
-        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine(mainWindow)}},
+        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine()}},
         { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
         { type: "separator" },
         { label: "Install Plugin Engine", click: ()=>{
           installImJoyEngine(mainWindow).then(()=>{
-            startImJoyEngine(mainWindow)
+            startImJoyEngine()
           })
         }},
       ]}, {
@@ -461,6 +462,7 @@ function createWelcomeDialog () {
     welcomeDialog.close()
   }
   welcomeDialog = wd
+  setAppMenu(welcomeDialog)
 }
 
 function createWindow (route_path) {
@@ -505,7 +507,6 @@ function createWindow (route_path) {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', ()=>{
-  setAppMenu()
   processEndCallback = null
   // createWindow('/#/app')
   createWelcomeDialog()
