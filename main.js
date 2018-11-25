@@ -18,6 +18,7 @@ let welcomeDialog = null
 const appWindows = []
 const HOME = os.homedir()
 const InstallDir = path.join(HOME, "ImJoyApp")
+const WorkspaceDir = path.join(HOME, "ImJoyWorkspace")
 const processes = []
 let processEndCallback = null
 let engineEndCallback = null
@@ -130,7 +131,13 @@ function executeCmd(label, cmd, param, ed, callback) {
 
 ipcMain.on('START_CMD', (event, arg) => {
   if(arg.start_app){
-    createWindow('/#/app')
+    const tk = getToken();
+    if(tk){
+      createWindow('/#/app?token='+tk);
+    }
+    else{
+      createWindow('/#/app');
+    }
   }
   else if(arg.start_engine){
     startImJoyEngine()
@@ -377,7 +384,15 @@ function setAppMenu(mainWindow){
           { label: "Welcome Dialog", accelerator: "CmdOrCtrl+W", click: ()=>{ createWelcomeDialog() }},
           { type: "separator" },
           { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ if(mainWindow && !mainWindow.closed) mainWindow.reload() }},
-          { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{ createWindow('/#/app') }},
+          { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{
+            const tk = getToken();
+            if(tk){
+              createWindow('/#/app?token='+tk);
+            }
+            else{
+              createWindow('/#/app');
+            }
+          }},
           { type: "separator" },
           { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
           { type: "separator" },
@@ -413,6 +428,15 @@ function setAppMenu(mainWindow){
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
+function getToken(){
+  const tokenPath = path.join(WorkspaceDir, '.token')
+  try {
+    const contents = fs.readFileSync(tokenPath, 'utf8')
+    return contents
+  } catch (e) {
+    return null
+  }
+}
 function switchToOffline(mainWindow){
   serverEnabled = true;
   const startEngine = ()=>{
@@ -420,7 +444,13 @@ function switchToOffline(mainWindow){
     setTimeout(()=>{
       if(engineProcess){
         // dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
-        createWindow('/#/app');
+        const tk = getToken();
+        if(tk){
+          createWindow('/#/app?token='+tk);
+        }
+        else{
+          createWindow('/#/app');
+        }
       }
       else{
         dialog.showMessageBox({title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
@@ -467,7 +497,7 @@ function createWelcomeDialog () {
 }
 
 function createWindow (route_path) {
-  let serverUrl = 'http://127.0.0.1:8000';//'https://imjoy.io';
+  let serverUrl = 'https://imjoy.io';
   if(serverEnabled){
     serverUrl = 'http://127.0.0.1:8080'
   }
@@ -480,7 +510,7 @@ function createWindow (route_path) {
         nodeIntegration: false,
         preload: path.join(__dirname, 'asserts', 'preload.js')
     },
-    show: false
+    show: true
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
@@ -501,9 +531,6 @@ function createWindow (route_path) {
     }
     mainWindow = null
   })
-  mainWindow.webContents.on('dom-ready', () => {
-    mainWindow.show()
-  });
   mainWindow.webContents.on("did-fail-load", () => {
      mainWindow.loadURL(serverUrl+route_path);
   });
