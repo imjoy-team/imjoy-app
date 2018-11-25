@@ -11,6 +11,7 @@ class ProgressBar {
 			abortOnError: false,
 			debug: false,
 			hideButtons: true,
+			hideProgress: false,
 			indeterminate: true,
 			initialValue: 0,
 			maxValue: 100,
@@ -309,6 +310,7 @@ class ProgressBar {
 				this._window.webContents.send('CREATE_PROGRESS_BAR', {
 					hideButtons: this._options.hideButtons,
 					indeterminate: this._options.indeterminate,
+					hideProgress: this._options.hideProgress,
 					maxValue: this._options.maxValue
 				});
 			}

@@ -180,6 +180,7 @@ function initEngineDialog(config){
   const ed = new EngineDialog({
     hideButtons: config && config.hideButtons,
     indeterminate: true,
+    hideProgress: config && config.hideProgress,
     text: 'ImJoy Plugin Engine',
     detail: '',
     title: 'ImJoy Plugin Engine',
@@ -315,7 +316,7 @@ function installImJoyEngine(appWindow) {
 
 function startImJoyEngine() {
   if(!engineDialog || engineDialog.isCompleted()){
-    engineDialog = initEngineDialog()
+    engineDialog = initEngineDialog({hideProgress: true})
   }
   engineDialog.show()
   if(engineProcess) return;
@@ -418,7 +419,7 @@ function switchToOffline(mainWindow){
     startImJoyEngine(mainWindow);
     setTimeout(()=>{
       if(engineProcess){
-        dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
+        // dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
         createWindow('/#/app');
       }
       else{
@@ -466,7 +467,7 @@ function createWelcomeDialog () {
 }
 
 function createWindow (route_path) {
-  let serverUrl = 'https://imjoy.io';
+  let serverUrl = 'http://127.0.0.1:8000';//'https://imjoy.io';
   if(serverEnabled){
     serverUrl = 'http://127.0.0.1:8080'
   }
@@ -478,7 +479,8 @@ function createWindow (route_path) {
     webPreferences: {
         nodeIntegration: false,
         preload: path.join(__dirname, 'asserts', 'preload.js')
-    }
+    },
+    show: false
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
@@ -499,6 +501,14 @@ function createWindow (route_path) {
     }
     mainWindow = null
   })
+  mainWindow.webContents.on('dom-ready', () => {
+    mainWindow.show()
+  });
+  mainWindow.webContents.on("did-fail-load", () => {
+     mainWindow.loadURL(serverUrl+route_path);
+  });
+
+
   setAppMenu(mainWindow)
   appWindows.push(mainWindow)
 }

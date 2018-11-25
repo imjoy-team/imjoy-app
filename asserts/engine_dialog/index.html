@@ -248,14 +248,18 @@
 					progressBar.appendChild(progressBarValue);
 
 					elements.progressBar = progressBar;
-					elements.progressBarContainer.appendChild(elements.progressBar);
+					if(!settings.hideProgress){
+						elements.progressBarContainer.appendChild(elements.progressBar);
+					}
 				}else{
 					var progressBar = document.createElement("progress");
 					progressBar.setAttribute("id", "progressBar");
 					progressBar.max = settings.maxValue;
 
 					elements.progressBar = progressBar;
-					elements.progressBarContainer.appendChild(elements.progressBar);
+					if(!settings.hideProgress){
+						elements.progressBarContainer.appendChild(elements.progressBar);
+					}
 				}
 
 				window.requestAnimationFrame(synchronizeUi);
