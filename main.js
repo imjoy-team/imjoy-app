@@ -553,7 +553,6 @@ app.on('before-quit', (event) => {
   if(processes.length > 0){
     terminateImJoyEngine()
     processEndCallback = app.quit
-    event.preventDefault();
   }
 })
 // app.on('quit', ()=>{
