@@ -8,7 +8,7 @@ const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
-const EngineDialog = require('./asserts/engine_dialog')
+const EngineDialog = require('./assets/engine_dialog')
 let engineDialog = null
 let engineProcess = null
 let welcomeDialog = null
@@ -470,7 +470,7 @@ function switchToOffline(mainWindow){
 
 function createWelcomeDialog () {
   // Create the browser window.
-  const wd = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
+  const wd = new BrowserWindow({icon: __dirname + '/assets/icons/png/64x64.png',
     title: "Welcome",
     parent: null,
     modal: true,
@@ -482,10 +482,10 @@ function createWelcomeDialog () {
     height: 360,
     // webPreferences: {
     //     nodeIntegration: false,
-    //     preload: path.join(__dirname, 'asserts', 'preload.js')
+    //     preload: path.join(__dirname, 'assets', 'preload.js')
     // }
   })
-  wd.loadURL(`file://${__dirname}/asserts/welcome_dialog.html`);
+  wd.loadURL(`file://${__dirname}/assets/welcome_dialog.html`);
   wd.on('closed', () => {
       welcomeDialog = null
   })
@@ -502,13 +502,13 @@ function createWindow (route_path) {
     serverUrl = 'http://127.0.0.1:8080'
   }
   // Create the browser window.
-  let mainWindow = new BrowserWindow({icon: __dirname + '/asserts/imjoy.ico',
+  let mainWindow = new BrowserWindow({icon: __dirname + '/assets/icons/png/64x64.png',
     title: `ImJoy App (${serverUrl})`,
     width: 1024,
     height: 768,
     webPreferences: {
         nodeIntegration: false,
-        preload: path.join(__dirname, 'asserts', 'preload.js')
+        preload: path.join(__dirname, 'assets', 'preload.js')
     },
     show: true
   })

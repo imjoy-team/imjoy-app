@@ -1,15 +1,15 @@
 {
   "name": "ImJoy",
-  "version": "0.2.8",
+  "version": "0.3.0",
   "description": "ImJoy Desktop App (with Plugin Engine)",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "npm run package-mac; npm run package-linux; npm run package-win32",
-    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-darwin-x64 -x '*.DS_Store' >ImJoy-darwin-x64.zip",
-    "package-win32": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-win32-x64 -x '*.DS_Store' >ImJoy-win32-x64.zip",
-    "package-linux": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-linux-x64 -x '*.DS_Store' >ImJoy-linux-x64.zip",
-    "package-mac-dmg": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./asserts/imjoy --prune=true --out=./build --overwrite && hdiutil create -ov -format UDZO -srcfolder ImJoy-darwin-x64 ImJoy-darwin-x64.dmg"
+    "package-mac": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./assets/icons/mac/imjoy-icon.icns --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-darwin-x64 -x '*.DS_Store' >ImJoy-darwin-x64.zip",
+    "package-win32": "electron-packager . ImJoy --platform=win32 --arch=x64 --icon=./assets/icons/win/imjoy-icon.ico --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-win32-x64 -x '*.DS_Store' >ImJoy-win32-x64.zip",
+    "package-linux": "electron-packager . ImJoy --platform=linux --arch=x64 --icon=./assets/icons/png/256x256.png --prune=true --out=./build --overwrite && cd ./build && zip -9 -r -X -q - ImJoy-linux-x64 -x '*.DS_Store' >ImJoy-linux-x64.zip",
+    "package-mac-dmg": "electron-packager . ImJoy --platform=darwin --arch=x64 --icon=./assets/icons/mac/imjoy-icon.icns --prune=true --out=./build --overwrite && hdiutil create -ov -format UDZO -srcfolder ImJoy-darwin-x64 ImJoy-darwin-x64.dmg"
   },
   "repository": "https://github.com/oeway/ImJoy",
   "keywords": [
