@@ -264,7 +264,7 @@ function installImJoyEngine(appWindow) {
       fs.mkdirSync(InstallDir);
       const cmds = [
         ['Replace User Site', 'python', ['-c', replace_user_site]],
-        ['Install Git', 'conda', ['install', '-y', 'git']],
+        ['Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
         ['Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
         ['Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
       ]

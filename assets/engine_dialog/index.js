@@ -96,14 +96,16 @@ class ProgressBar {
 	}
 
 	set title(title) {
-		if (this._window) {
-			this._window.setTitle(title);
+		if (!this._window || this._window.isDestroyed()) {
+			return;
 		}
+
+		this._window.setTitle(title);
 	}
 
 	set value(value) {
-		if (!this._window) {
-			return this._error('Invalid call: trying to set value but the progress bar window is not active.');
+		if (!this._window || this._window.isDestroyed()) {
+			return;
 		}
 
 		if (!this.isInProgress()) {
@@ -131,21 +133,33 @@ class ProgressBar {
 	}
 
 	set text(text) {
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._options.text = text;
 		this._window.webContents.send('SET_TEXT', text);
 	}
 
 	set detail(detail) {
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._options.detail = detail;
 		this._window.webContents.send('SET_DETAIL', detail);
 	}
 
 	log(msg){
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._window.webContents.send('LOG', msg);
 		console.log(msg);
 	}
 
 	error(msg){
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._window.webContents.send('ERROR', msg);
 		console.error(msg);
 	}
@@ -166,7 +180,7 @@ class ProgressBar {
 
 		this._realValue = this._options.maxValue;
 
-		if (!this._options.indeterminate) {
+		if (this._window && !this._options.indeterminate) {
 			this._window.webContents.send('SET_PROGRESS', this._realValue);
 		}
 
@@ -184,10 +198,16 @@ class ProgressBar {
 	}
 
 	hide() {
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._window.hide()
 	}
 
 	show() {
+		if (!this._window || this._window.isDestroyed()) {
+			return;
+		}
 		this._window.show()
 		this._window.focus()
 	}

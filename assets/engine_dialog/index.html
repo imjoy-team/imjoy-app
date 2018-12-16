@@ -267,6 +267,9 @@
 				if(settings.hideButtons){
 					document.querySelector("#buttonGroup").style.display = "none";
 				}
+				//scroll to bottom
+				var _logContainer = elements.logContainer;
+				_logContainer.scrollTo(0, _logContainer.scrollHeight);
 			}
 
 			function sendCommand(cmd, arg){
