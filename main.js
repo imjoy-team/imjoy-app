@@ -8,10 +8,13 @@ const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
+const sio = require('socket.io-client')
+const prompt = require('electron-prompt')
 const EngineDialog = require('./assets/engine_dialog')
 let engineDialog = null
 let engineProcess = null
 let welcomeDialog = null
+let socket = null
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -69,6 +72,18 @@ function download(url, dest) {
       reject(err.message);
     });
   })
+}
+
+function generateUUID() { // Public Domain/MIT
+    var d = new Date().getTime();
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function'){
+        d += performance.now(); //use high-precision timer if available
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
 }
 
 function executeCmd(label, cmd, param, ed, callback) {
@@ -328,13 +343,45 @@ function startImJoyEngine() {
   engineDialog.show()
   if(engineProcess) return;
   if(checkEngineExists()){
-    const args = ['-m', 'imjoy']
+    let engine_container_token = generateUUID()
+    const args = ['-m', 'imjoy', '--engine_container_token='+engine_container_token]
     if(serverEnabled){
       args.push('--serve')
     }
     engineEndCallback = null
     engineExiting = false
-    executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{ engineProcess = p }).catch((e)=>{
+    executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{
+      engineProcess = p;
+      if(socket) {
+        try {
+          socket.disconnect()
+          socket.close()
+        } catch (e) {
+        }
+      }
+      socket = sio('http://127.0.0.1:8080')
+      socket.on('connect', ()=>{console.log('Plugin Engine started sucessfully')});
+      socket.on('disconnect', ()=>{console.log('disconnected from the Plugin Engine')});
+      socket.on('message_to_container_'+engine_container_token, (data)=>{
+        if(data.type === 'popup_token'){
+          const tk = getToken();
+          if(tk){
+            prompt({
+                title: 'Connecting to the ImJoy Plugin Engine',
+                label: 'Connection Token:',
+                value: tk,
+                inputAttrs: {
+                    type: 'text'
+                }
+            })
+          }
+          else{
+            console.log('No connection found in ".token"')
+          }
+        }
+      })
+
+    }).catch((e)=>{
       console.error(e)
       engineProcess = null
       if(!engineExiting){
