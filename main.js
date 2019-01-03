@@ -68,8 +68,9 @@ function download(url, dest) {
         file.close(resolve);  // close() is async, call cb after close completes.
       });
     }).on('error', function(err) { // Handle errors
-      fs.unlink(dest); // Delete the file async. (But we don't check the result)
-      reject(err.message);
+      fs.unlink(dest, ()=>{
+        reject(err.message)
+      }); // Delete the file async. (But we don't check the result)
     });
   })
 }
@@ -319,7 +320,7 @@ function installImJoyEngine(appWindow) {
         }
       }
       ed.on('close', function(event) {
-        event.preventDefault()
+        ed = null
       })
       runCmds().then(()=>{
         dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
@@ -328,9 +329,11 @@ function installImJoyEngine(appWindow) {
         dialog.showErrorBox("Failed to Install the Plugin Engine", e + " You may want to try again or reinstall the Plugin Engine.")
         reject()
       }).finally(()=>{
-        // ed.hide()
-        ed.setCompleted()
-        ed.close()
+        if(ed){
+          // ed.hide()
+          ed.setCompleted()
+          ed.close()
+        }
       })
     }).catch(reject)
   })
