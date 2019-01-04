@@ -204,7 +204,7 @@ function initEngineDialog(config){
     hideButtons: config && config.hideButtons,
     indeterminate: true,
     hideProgress: config && config.hideProgress,
-    text: 'ImJoy Plugin Engine',
+    text: 'ImJoy Plugin Engine 🚀',
     detail: '',
     title: 'ImJoy Plugin Engine',
     browserWindow: config && config.appWindow && {parent: config.appWindow}
@@ -353,7 +353,7 @@ function startImJoyEngine() {
     }
     engineEndCallback = null
     engineExiting = false
-    executeCmd("ImJoy Plugin Engine", "python", args, engineDialog, (p)=>{
+    executeCmd("ImJoy Plugin Engine 🚀", "python", args, engineDialog, (p)=>{
       engineProcess = p;
       if(socket) {
         try {
@@ -367,13 +367,13 @@ function startImJoyEngine() {
       socket.on('connect', ()=>{
         if(engineDialog){
           engineDialog.log('Plugin Engine started sucessfully')
-          engineDialog.text = 'ImJoy Plugin Engine (running)'
+          engineDialog.text = 'ImJoy Plugin Engine 🚀 (running)'
         }
       });
       socket.on('disconnect', ()=>{
         if(engineDialog){
           engineDialog.log('Disconnected from the Plugin Engine.')
-          engineDialog.text = 'ImJoy Plugin Engine (stopped)'
+          engineDialog.text = 'ImJoy Plugin Engine 🚀 (stopped)'
         }
     });
       socket.on('message_to_container_'+engine_container_token, (data)=>{
@@ -383,7 +383,7 @@ function startImJoyEngine() {
             displayingToken = true
             prompt({
                 title: 'Connecting to the ImJoy Plugin Engine',
-                label: 'Connection Token -- Please copy and paste it to your ImJoy Web App',
+                label: '🚀 Connection Token -- Please copy and paste it to your ImJoy Web App',
                 value: tk,
                 width: 550,
                 height: 150,
