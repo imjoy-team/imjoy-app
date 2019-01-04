@@ -362,24 +362,41 @@ function startImJoyEngine() {
         } catch (e) {
         }
       }
+      let displayingToken = false
       socket = sio('http://127.0.0.1:8080')
-      socket.on('connect', ()=>{console.log('Plugin Engine started sucessfully')});
-      socket.on('disconnect', ()=>{console.log('disconnected from the Plugin Engine')});
+      socket.on('connect', ()=>{
+        if(engineDialog){
+          engineDialog.log('Plugin Engine started sucessfully')
+          engineDialog.text = 'ImJoy Plugin Engine (running)'
+        }
+      });
+      socket.on('disconnect', ()=>{
+        if(engineDialog){
+          engineDialog.log('Disconnected from the Plugin Engine.')
+          engineDialog.text = 'ImJoy Plugin Engine (stopped)'
+        }
+    });
       socket.on('message_to_container_'+engine_container_token, (data)=>{
         if(data.type === 'popup_token'){
           const tk = getToken();
-          if(tk){
+          if(tk && !displayingToken){
+            displayingToken = true
             prompt({
                 title: 'Connecting to the ImJoy Plugin Engine',
-                label: 'Connection Token:',
+                label: 'Connection Token -- Please copy and paste it to your ImJoy Web App',
                 value: tk,
+                width: 550,
+                height: 150,
                 inputAttrs: {
-                    type: 'text'
+                    type: 'text',
+                    style: 'font-size:20px; font-family: Arial, Helvetica, sans-serif;'
                 }
+            }, engineDialog && engineDialog._window).finally(()=>{
+              displayingToken = false
             })
           }
           else{
-            console.log('No connection found in ".token"')
+            if(!tk) console.log('No connection token found in ".token"')
           }
         }
       })
@@ -388,7 +405,7 @@ function startImJoyEngine() {
       console.error(e)
       engineProcess = null
       if(!engineExiting){
-        dialog.showMessageBox({title: "Plugin Engine Exited", message: e})
+        dialog.showMessageBox({title: "Plugin Engine stopped.", message: e})
       }
     }).finally(()=>{
       engineProcess = null
