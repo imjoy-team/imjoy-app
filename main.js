@@ -276,36 +276,36 @@ function installImJoyEngine(appWindow) {
   return new Promise((resolve, reject)=>{
     checkOldInstallation().then(()=>{
       const ed = initEngineDialog({appWindow: appWindow})
+      ed.text = 'Installing ImJoy Plugin Engine 🚀...'
       ed.show()
       fs.mkdirSync(InstallDir);
       const cmds = [
-        ['Replace User Site', 'python', ['-c', replace_user_site]],
-        ['Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
-        ['Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
-        ['Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+        ['Step 3/6: Replace User Site', 'python', ['-c', replace_user_site]],
+        ['Step 4/6: Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
+        ['Step 5/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
+        ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
       ]
 
       const runCmds = async ()=>{
+        ed.log('Downloading Miniconda...')
+        ed.text = 'Step 1/6: Downloading Miniconda...'
         if(process.platform === 'darwin'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-          ed.log('Downloading Miniconda...')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
           ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+          cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
         }
         else if(process.platform === 'linux'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-          ed.log('Downloading Miniconda...')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
           ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+          cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
         }
         else if(process.platform === 'win32'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
-          ed.log('Downloading Miniconda...')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
           ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+          cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
         }
         else{
           throw "Unsupported Platform: " + process.platform
@@ -323,8 +323,7 @@ function installImJoyEngine(appWindow) {
         ed = null
       })
       runCmds().then(()=>{
-        dialog.showMessageBox({title: "Installation Finished", message: "ImJoy Plugin Engine Installed."})
-        resolve()
+        dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Installation Finished", message: "ImJoy Plugin Engine sucessfully installed."}, resolve)
       }).catch((e)=>{
         dialog.showErrorBox("Failed to Install the Plugin Engine", e + " You may want to try again or reinstall the Plugin Engine.")
         reject()
@@ -345,6 +344,7 @@ function startImJoyEngine() {
   }
   engineDialog.show()
   if(engineProcess) return;
+  engineDialog.text = 'Starting ImJoy Plugin Engine 🚀...'
   if(checkEngineExists()){
     let engine_container_token = generateUUID()
     const args = ['-m', 'imjoy', '--engine_container_token='+engine_container_token]
@@ -353,7 +353,7 @@ function startImJoyEngine() {
     }
     engineEndCallback = null
     engineExiting = false
-    executeCmd("ImJoy Plugin Engine 🚀", "python", args, engineDialog, (p)=>{
+    executeCmd("Starting ImJoy Plugin Engine 🚀...", "python", args, engineDialog, (p)=>{
       engineProcess = p;
       if(socket) {
         try {
@@ -366,13 +366,11 @@ function startImJoyEngine() {
       socket = sio('http://127.0.0.1:8080')
       socket.on('connect', ()=>{
         if(engineDialog){
-          engineDialog.log('Plugin Engine started sucessfully')
           engineDialog.text = 'ImJoy Plugin Engine 🚀 (running)'
         }
       });
       socket.on('disconnect', ()=>{
         if(engineDialog){
-          engineDialog.log('Disconnected from the Plugin Engine.')
           engineDialog.text = 'ImJoy Plugin Engine 🚀 (stopped)'
         }
     });
@@ -405,7 +403,7 @@ function startImJoyEngine() {
       console.error(e)
       engineProcess = null
       if(!engineExiting){
-        dialog.showMessageBox({title: "Plugin Engine stopped.", message: e})
+        dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Plugin Engine stopped.", message: e})
       }
     }).finally(()=>{
       engineProcess = null
@@ -423,7 +421,12 @@ function startImJoyEngine() {
     const dialogOptions = {type: 'info', buttons: ['Install', 'Cancel'], message: 'Plugin Engine not found! Would you like to setup Plugin Engine? This may take a while.'}
     dialog.showMessageBox(dialogOptions, (choice) => {
       if(choice == 0){
-        installImJoyEngine(engineDialog).then(()=>{
+        engineDialog.setCompleted()
+        engineDialog.close()
+        engineDialog = null
+        installImJoyEngine().then(()=>{
+          engineDialog = null
+          engineProcess = null
           startImJoyEngine()
         })
       }
@@ -510,7 +513,7 @@ function switchToOffline(mainWindow){
     startImJoyEngine(mainWindow);
     setTimeout(()=>{
       if(engineProcess){
-        // dialog.showMessageBox({title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
+        // dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
         const tk = getToken();
         if(tk){
           createWindow('/#/app?token='+tk);
@@ -520,7 +523,7 @@ function switchToOffline(mainWindow){
         }
       }
       else{
-        dialog.showMessageBox({title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
+        dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
       }
     }, 5000)
   }

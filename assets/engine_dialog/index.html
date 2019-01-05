@@ -279,7 +279,7 @@
 				currentValue.detail = data.slice(0, 100);
 				var _logContainer = elements.logContainer;
 				var _linesLimit = 500;
-				var wasScrolledBottom = _isScrolledBottom(_logContainer);
+				var wasScrolledBottom = true; //_isScrolledBottom(_logContainer);
 				var div = document.createElement('div');
 				var p = document.createElement('p');
 				p.className = 'inner-line';
