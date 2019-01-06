@@ -15,6 +15,7 @@ let engineDialog = null
 let engineProcess = null
 let welcomeDialog = null
 let socket = null
+let displayingToken = false
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -179,7 +180,10 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
     console.log('event received, but engine dialog closed.', arg)
     return;
   }
-
+  if(arg.show_token){
+    const tk = getToken();
+    showToken(tk, engineDialog)
+  }
   // if(arg.show){
   //   engineDialog.show()
   //   event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
@@ -211,7 +215,7 @@ function initEngineDialog(config){
   });
 
   ed.on('completed', function() {
-    console.info(`completed...`);
+    console.info(`Plugin Engine stopped`);
   })
   .on('aborted', function() {
     console.info(`aborted...`);
@@ -338,9 +342,31 @@ function installImJoyEngine(appWindow) {
   })
 }
 
+function showToken(tk, engineDialog){
+  if(tk && !displayingToken){
+    displayingToken = true
+    prompt({
+        title: 'Connecting to the ImJoy Plugin Engine',
+        label: '🚀 Connection Token -- Please copy & paste it to your ImJoy Web App',
+        value: tk,
+        width: 580,
+        height: 150,
+        inputAttrs: {
+            type: 'text',
+            style: 'font-size:20px; font-family: Arial, Helvetica, sans-serif;'
+        }
+    }, engineDialog && engineDialog._window).finally(()=>{
+      displayingToken = false
+    })
+  }
+  else{
+    if(!tk) console.log('No connection token found in ".token"')
+  }
+}
 function startImJoyEngine() {
+  const tk = getToken();
   if(!engineDialog || engineDialog.isCompleted()){
-    engineDialog = initEngineDialog({hideProgress: true})
+    engineDialog = initEngineDialog({hideProgress: true, hideButtons: !tk})
   }
   engineDialog.show()
   if(engineProcess) return;
@@ -362,7 +388,6 @@ function startImJoyEngine() {
         } catch (e) {
         }
       }
-      let displayingToken = false
       socket = sio('http://127.0.0.1:8080')
       socket.on('connect', ()=>{
         if(engineDialog){
@@ -376,26 +401,7 @@ function startImJoyEngine() {
     });
       socket.on('message_to_container_'+engine_container_token, (data)=>{
         if(data.type === 'popup_token'){
-          const tk = getToken();
-          if(tk && !displayingToken){
-            displayingToken = true
-            prompt({
-                title: 'Connecting to the ImJoy Plugin Engine',
-                label: '🚀 Connection Token -- Please copy and paste it to your ImJoy Web App',
-                value: tk,
-                width: 550,
-                height: 150,
-                inputAttrs: {
-                    type: 'text',
-                    style: 'font-size:20px; font-family: Arial, Helvetica, sans-serif;'
-                }
-            }, engineDialog && engineDialog._window).finally(()=>{
-              displayingToken = false
-            })
-          }
-          else{
-            if(!tk) console.log('No connection token found in ".token"')
-          }
+          showToken(tk, engineDialog);
         }
       })
 

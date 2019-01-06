@@ -16,13 +16,13 @@
 			}
 
 			#text{
-				height: 26px;
+				height: 36px;
 				overflow: hidden;
-				font-size: 14px;
+				font-size: 22px;
 				font-weight: bold;
 				padding: 5px 0;
 				word-break: break-all;
-				display: block;
+				display: inline-block;
 			}
 
 			#detail{
@@ -35,7 +35,7 @@
 
 			#logContainer{
     	  position: absolute;
-				height: calc( 100% - 120px );
+				height: calc( 100% - 145px );
 				width: calc( 100% - 40px );
 				margin: 5px 0px;
 				padding: 5px 2px;
@@ -51,17 +51,18 @@
 			    background-color: #448aff; /* Green background */
 			    border: 1px solid white; /* Green border */
 			    color: white; /* White text */
-			    margin: 3px;
-			    padding: 10px 24px; /* Some padding */
+			    margin: 1px;
+			    padding: 5px 10px; /* Some padding */
 			    cursor: pointer; /* Pointer/hand icon */
-			    float: left; /* Float the buttons side by side */
+			    /* float: left;  Float the buttons side by side */
+					display: inline-block;
 			}
 
 			/* Clear floats (clearfix hack) */
 			.btn-group:after {
 			    content: "";
 			    clear: both;
-			    display: table;
+			    display: block;
 			}
 
 			.btn-group button:not(:last-child) {
@@ -207,14 +208,19 @@
 		</style>
 	</head>
 	<body>
-		<div id="text"></div>
+		<div style="display: block;">
+			<div id="text"></div>
+			<div class="btn-group" id="buttonGroup">
+				<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {show_token: true})">Show Connection Token</button>
+				<!-- <button id='toggleLogButton' type="button" style="width:30%;" onclick="toggleLog()">Show Log Window</button> -->
+				<!-- <button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {hide: true})">Hide</button>
+				<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {exit: true})">Exit</button> -->
+			</div>
+		</div>
 		<div id="progressBarContainer"></div>
 		<div id="detail"></div>
 		<div id="logContainer"></div>
-		<div class="btn-group" id="buttonGroup">
-			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {hide: true})">Hide</button>
-			<button type="button" style="width:30%" onclick="sendCommand('UPDATE_ENGINE_DIALOG', {exit: true})">Exit</button>
-		</div>
+
 		<script>
 			var _isScrolledBottom = function(elem) {
 				var currentScroll = elem.scrollTop;
@@ -275,6 +281,19 @@
 			function sendCommand(cmd, arg){
 				require("electron").ipcRenderer.send(cmd, arg)
 			}
+
+			function toggleLog(){
+				var toggleBtn = document.getElementById("toggleLogButton");
+				var _logContainer = elements.logContainer;
+				 if (_logContainer.style.display === "none") {
+					 _logContainer.style.display = "block";
+					 toggleBtn.innerHTML = 'Hide Log Window';
+				 } else {
+					 _logContainer.style.display = "none";
+					 toggleBtn.innerHTML = 'Show Log Window';
+				 }
+			}
+
 			function append_log(data, isError){
 				currentValue.detail = data.slice(0, 100);
 				var _logContainer = elements.logContainer;
