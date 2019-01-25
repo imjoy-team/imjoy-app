@@ -373,7 +373,7 @@ function startImJoyEngine() {
   engineDialog.text = 'Starting ImJoy Plugin Engine 🚀...'
   if(checkEngineExists()){
     let engine_container_token = generateUUID()
-    const args = ['-m', 'imjoy', '--engine_container_token='+engine_container_token]
+    const args = ['-m', 'imjoy', '--port=9527', '--engine_container_token='+engine_container_token]
     if(serverEnabled){
       args.push('--serve')
     }
@@ -388,7 +388,7 @@ function startImJoyEngine() {
         } catch (e) {
         }
       }
-      socket = sio('http://127.0.0.1:8080')
+      socket = sio('http://127.0.0.1:9527')
       socket.on('connect', ()=>{
         if(engineDialog){
           engineDialog.text = 'ImJoy Plugin Engine 🚀 (running)'
@@ -575,7 +575,7 @@ function createWelcomeDialog () {
 function createWindow (route_path) {
   let serverUrl = 'https://imjoy.io';
   if(serverEnabled){
-    serverUrl = 'http://127.0.0.1:8080'
+    serverUrl = 'http://127.0.0.1:9527'
   }
   // Create the browser window.
   let mainWindow = new BrowserWindow({icon: __dirname + '/assets/icons/png/64x64.png',
