@@ -257,16 +257,17 @@ function checkOldInstallation(){
         const dialogOptions = {type: 'info', buttons: ['Yes, reinstall it', 'Cancel'], message: `Found existing ImJoy Plugin Engine in ~/ImJoyApp folder, are you sure to remove it and start a new installation?`}
         dialog.showMessageBox(dialogOptions, (choice) => {
           if(choice == 0){
-            fs.renameSync(InstallDir, `${InstallDir}-${dateStr}`, (err) => {
-               if (err) {
-                 console.error(err);
-               }
-            })
-            resolve()
+            try {
+              fs.renameSync(InstallDir, `${InstallDir}-${dateStr}`)
+              resolve()
+            } catch (e) {
+              console.error(e);
+              reject(e)
+            }
           }
           else{
             console.log('installation is canceled by the user.')
-            reject()
+            reject('installation is canceled by the user.')
           }
         })
     }
@@ -279,65 +280,70 @@ function checkOldInstallation(){
 function installImJoyEngine(appWindow) {
   return new Promise((resolve, reject)=>{
     checkOldInstallation().then(()=>{
-      const ed = initEngineDialog({appWindow: appWindow})
-      ed.text = 'Installing ImJoy Plugin Engine 🚀...'
-      ed.show()
-      fs.mkdirSync(InstallDir);
-      const cmds = [
-        ['Step 3/6: Replace User Site', 'python', ['-c', replace_user_site]],
-        ['Step 4/6: Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
-        ['Step 5/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
-        ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
-      ]
+      try {
+        const ed = initEngineDialog({appWindow: appWindow})
+        ed.text = 'Installing ImJoy Plugin Engine 🚀...'
+        ed.show()
+        fs.mkdirSync(InstallDir);
+        const cmds = [
+          ['Step 3/6: Replace User Site', 'python', ['-c', replace_user_site]],
+          ['Step 4/6: Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
+          ['Step 5/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
+          ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+        ]
 
-      const runCmds = async ()=>{
-        ed.log('Downloading Miniconda...')
-        ed.text = 'Step 1/6: Downloading Miniconda...'
-        if(process.platform === 'darwin'){
-          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
-          ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
-        }
-        else if(process.platform === 'linux'){
-          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
-          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
-          ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
-        }
-        else if(process.platform === 'win32'){
-          const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
-          await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
-          ed.log('Miniconda donwloaded.')
-          cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
-        }
-        else{
-          throw "Unsupported Platform: " + process.platform
-        }
+        const runCmds = async ()=>{
+          ed.log('Downloading Miniconda...')
+          ed.text = 'Step 1/6: Downloading Miniconda...'
+          if(process.platform === 'darwin'){
+            const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+            await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
+            ed.log('Miniconda donwloaded.')
+            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+          }
+          else if(process.platform === 'linux'){
+            const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
+            await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
+            ed.log('Miniconda donwloaded.')
+            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+          }
+          else if(process.platform === 'win32'){
+            const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
+            await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
+            ed.log('Miniconda donwloaded.')
+            cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+          }
+          else{
+            throw "Unsupported Platform: " + process.platform
+          }
 
-        for(let cmd of cmds){
-          try {
-            await executeCmd(cmd[0], cmd[1], cmd[2], ed)
-          } catch (e) {
-            throw e
+          for(let cmd of cmds){
+            try {
+              await executeCmd(cmd[0], cmd[1], cmd[2], ed)
+            } catch (e) {
+              throw e
+            }
           }
         }
+        ed.on('close', function(event) {
+          ed = null
+        })
+        runCmds().then(()=>{
+          dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Installation Finished", message: "ImJoy Plugin Engine sucessfully installed."}, resolve)
+          resolve()
+        }).catch((e)=>{
+          dialog.showErrorBox("Failed to Install the Plugin Engine", e + " You may want to try again or reinstall the Plugin Engine.")
+          reject()
+        }).finally(()=>{
+          if(ed){
+            // ed.hide()
+            ed.setCompleted()
+            ed.close()
+          }
+        })
+      } catch (e) {
+        reject(e)
       }
-      ed.on('close', function(event) {
-        ed = null
-      })
-      runCmds().then(()=>{
-        dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Installation Finished", message: "ImJoy Plugin Engine sucessfully installed."}, resolve)
-      }).catch((e)=>{
-        dialog.showErrorBox("Failed to Install the Plugin Engine", e + " You may want to try again or reinstall the Plugin Engine.")
-        reject()
-      }).finally(()=>{
-        if(ed){
-          // ed.hide()
-          ed.setCompleted()
-          ed.close()
-        }
-      })
     }).catch(reject)
   })
 }
