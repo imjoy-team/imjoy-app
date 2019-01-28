@@ -253,7 +253,7 @@ function initEngineDialog(config){
 function checkOldInstallation(){
   return new Promise((resolve, reject)=>{
     if(fs.existsSync(InstallDir)){
-        const dateStr = new Date().toJSON()
+        const dateStr = new Date().toJSON().replace(/:/g, '_')
         const dialogOptions = {type: 'info', buttons: ['Yes, reinstall it', 'Cancel'], message: `Found existing ImJoy Plugin Engine in ~/ImJoyApp folder, are you sure to remove it and start a new installation?`}
         dialog.showMessageBox(dialogOptions, (choice) => {
           if(choice == 0){
