@@ -296,19 +296,19 @@ function installImJoyEngine(appWindow) {
         if(process.platform === 'darwin'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
-          ed.log('Miniconda donwloaded.')
+          ed.log('Miniconda downloaded.')
           cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
         }
         else if(process.platform === 'linux'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
-          ed.log('Miniconda donwloaded.')
+          ed.log('Miniconda downloaded.')
           cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
         }
         else if(process.platform === 'win32'){
           const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
           await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
-          ed.log('Miniconda donwloaded.')
+          ed.log('Miniconda downloaded.')
           cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
         }
         else{
