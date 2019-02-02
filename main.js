@@ -93,9 +93,9 @@ function executeCmd(label, cmd, param, ed, callback) {
   return new Promise((resolve, reject)=>{
     ed.text = label
     const env = Object.create( process.env );
-    const libPath = path.join(InstallDir, 'Library', 'bin');
-    if(fs.existsSync(libPath)){
-      env.PATH = libPath + path.delimiter + env.PATH
+    const sslPath = path.join(InstallDir, 'Library', 'bin');
+    if(fs.existsSync(sslPath)){
+      env.PATH = sslPath + path.delimiter + env.PATH
     }
     const p = child_process.spawn(cmd, param, { env: env });
     if(callback) callback(p);
