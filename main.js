@@ -92,7 +92,12 @@ function executeCmd(label, cmd, param, ed, callback) {
   ed = ed || engineDialog
   return new Promise((resolve, reject)=>{
     ed.text = label
-    const p = child_process.spawn(cmd, param);
+    const env = Object.create( process.env );
+    const libPath = path.join(InstallDir, 'Library', 'bin');
+    if(fs.existsSync(libPath)){
+      env.PATH = libPath + path.delimiter + env.PATH
+    }
+    const p = child_process.spawn(cmd, param, { env: env });
     if(callback) callback(p);
     processes.push(p)
     let backlog_out = ''
