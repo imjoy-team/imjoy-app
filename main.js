@@ -587,11 +587,11 @@ function createWindow (route_path) {
     title: `ImJoy App (${serverUrl})`,
     width: 1024,
     height: 768,
-    // webPreferences: {
-    //     nodeIntegration: false,
-    //     preload: path.join(__dirname, 'assets', 'preload.js')
-    // },
-    // show: true
+    webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(__dirname, 'assets', 'preload.js')
+    },
+    show: true
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
