@@ -1,6 +1,6 @@
 'use strict';
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol, dialog, Menu, ipcMain} = require('electron')
+const {app, BrowserWindow, protocol, dialog, Menu, ipcMain, BrowserView} = require('electron')
 const path = require('path')
 const url = require('url')
 const child_process = require('child_process')
@@ -587,15 +587,21 @@ function createWindow (route_path) {
     title: `ImJoy App (${serverUrl})`,
     width: 1024,
     height: 768,
-    webPreferences: {
-        nodeIntegration: false,
-        preload: path.join(__dirname, 'assets', 'preload.js')
-    },
-    show: true
+    // webPreferences: {
+    //     nodeIntegration: false,
+    //     preload: path.join(__dirname, 'assets', 'preload.js')
+    // },
+    // show: true
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
-  mainWindow.loadURL(serverUrl+route_path);
+  // mainWindow.loadURL(serverUrl+route_path);
+
+  let view = new BrowserView()
+  mainWindow.setBrowserView(view)
+  view.setBounds({ x: 0, y: 0, width: 1024, height: 750 })
+  view.setAutoResize({ width: true, height: true })
+  view.webContents.loadURL(serverUrl + route_path)
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -613,7 +619,8 @@ function createWindow (route_path) {
     mainWindow = null
   })
   mainWindow.webContents.on("did-fail-load", () => {
-     mainWindow.loadURL(serverUrl+route_path);
+    // mainWindow.loadURL(serverUrl+route_path);
+    view.webContents.loadURL(serverUrl + route_path)
   });
 
 
