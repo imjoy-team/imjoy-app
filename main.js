@@ -1,6 +1,6 @@
 'use strict';
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol, dialog, Menu, ipcMain} = require('electron')
+const {app, BrowserWindow, protocol, dialog, Menu, ipcMain, BrowserView} = require('electron')
 const path = require('path')
 const url = require('url')
 const child_process = require('child_process')
@@ -92,7 +92,12 @@ function executeCmd(label, cmd, param, ed, callback) {
   ed = ed || engineDialog
   return new Promise((resolve, reject)=>{
     ed.text = label
-    const p = child_process.spawn(cmd, param);
+    const env = Object.create( process.env );
+    const sslPath = path.join(InstallDir, 'Library', 'bin');
+    if(fs.existsSync(sslPath)){
+      env.PATH = sslPath + path.delimiter + env.PATH
+    }
+    const p = child_process.spawn(cmd, param, { env: env });
     if(callback) callback(p);
     processes.push(p)
     let backlog_out = ''
@@ -596,7 +601,13 @@ function createWindow (route_path) {
   })
   // and load the index.html of the app.
   // mainWindow.loadFile('index.html')
-  mainWindow.loadURL(serverUrl+route_path);
+  // mainWindow.loadURL(serverUrl+route_path);
+
+  let view = new BrowserView()
+  mainWindow.setBrowserView(view)
+  view.setBounds({ x: 0, y: 0, width: 1024, height: 750 })
+  view.setAutoResize({ width: true, height: true })
+  view.webContents.loadURL(serverUrl + route_path)
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -614,7 +625,8 @@ function createWindow (route_path) {
     mainWindow = null
   })
   mainWindow.webContents.on("did-fail-load", () => {
-     mainWindow.loadURL(serverUrl+route_path);
+    // mainWindow.loadURL(serverUrl+route_path);
+    view.webContents.loadURL(serverUrl + route_path)
   });
 
 
