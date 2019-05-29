@@ -281,6 +281,42 @@ function checkOldInstallation(){
   })
 }
 
+
+function uninstallImJoyEngine() {
+  // delete ImJoy App
+  child_process.exec('rm -rf ~/ImJoyApp', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.log(`stderr: ${stderr}`);
+  });
+
+  const dialogOptions = { 
+    type: 'question', 
+    title: 'Message',
+    buttons: ['Yes', 'Cancel'],
+    message: 'Do you want to remove all the data in the ImJoy Workspace folder?'
+  }
+
+  dialog.showMessageBox(dialogOptions, (choice) => {
+    if (choice === 0) {
+      // delete ImJoy Workspace 
+      child_process.exec('rm -rf ~/ImJoyWorkspace', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`exec error: ${error}`);
+          dialog.showMessageBox({type: 'error', message: `${stdout}`, title: 'Error'})
+          return;
+        }
+        console.log(`stdout: ${stdout}`);
+        console.log(`stderr: ${stderr}`);
+        dialog.showMessageBox({type: 'info', message: 'Delete successful !', title: 'Message', buttons: ['OK']})
+      }); 
+    }
+  })
+}
+
 function installImJoyEngine(appWindow) {
   return new Promise((resolve, reject)=>{
     checkOldInstallation().then(()=>{
@@ -499,6 +535,9 @@ function setAppMenu(mainWindow){
           installImJoyEngine(mainWindow).then(()=>{
             startImJoyEngine()
           })
+        }},
+        { label: "Uninstall ImJoy Engine", click: ()=>{
+          uninstallImJoyEngine()
         }},
       ]}, {
       label: "Help",
