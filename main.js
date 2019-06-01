@@ -315,77 +315,91 @@ function rmdir(dir,cb) {
   })
 }
 
-// remove directory
-async function removeDir(path) {
-  return new Promise((resolve, reject) => {
-    rmdir(path, () => {
-      if (fs.existsSync(path)) {
-        // delete soft links
-        fs.readdir(path, (err, files) => {
-          if (err) {
-            console.error(err)
-            reject(err)
-          } else {
-            rmdir(path ,() => {
-              console.log('delete success')
-              resolve()
-            })
-          }
-        })  
-      } else {
-        console.log('delete success')  
-        resolve()
+const deleteFolderRecursive = function(path) {
+  if (fs.existsSync(path)) {
+    fs.readdirSync(path).forEach(function(file, index){
+      var curPath = path + "/" + file;
+      if (fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        fs.unlinkSync(curPath);
       }
-    })
-  })
-}
-
-async function uninstallImJoyEngine() {
-  if (fs.existsSync(InstallDir)) {
-    let installPath = InstallDir + '/'
-    await removeDir(installPath).catch((err) => {
-      dialog.showMessageBox({
-        type: 'error',
-        message: err,
-        title: 'Error',
-        buttons: ['OK']
-      })
-      return
-    })
-  } else {
-    console.log(InstallDir + ' directory does not exist')
+    });
+    fs.rmdirSync(path);
   }
+};
 
-  const dialogOptions = { 
-    type: 'question', 
-    title: 'Message',
-    buttons: ['Yes', 'Cancel'],
-    message: 'Do you want to remove all the data in the ImJoy Workspace folder?'
-  }
-  dialog.showMessageBox(dialogOptions, async (choice) => {
-    if (choice === 0) {
-      if (fs.existsSync(WorkspaceDir)) {
-        let workspacePath = WorkspaceDir + '/'
-        await removeDir(workspacePath).catch((err) => {
-          dialog.showMessageBox({
-            type: 'error',
-            message: err,
-            title: 'Error',
-            buttons: ['OK']
-          })
-          return
+function uninstallImJoyEngine() {
+  return new Promise((resolve, reject)=>{
+    const p1 = new Promise(function(resolve1, reject1) {
+      if (fs.existsSync(InstallDir)) {
+        const dialogOptions = { 
+          type: 'question', 
+          title: 'Message',
+          buttons: ['Yes', 'Cancel'],
+          message: 'Do you want to remove ALL the data in `~/ImJoyApp`?'
+        }
+        dialog.showMessageBox(dialogOptions, (choice) => {
+          if (choice === 0) {
+            let installPath = InstallDir + '/'
+            deleteFolderRecursive(installPath).then(resolve1).catch((err)=>{
+              dialog.showMessageBox({
+                type: 'error',
+                message: `Failed to remove '~/ImJoyApp' folder, please remove it manually. Error: ${err}`,
+                title: 'Failed to remove folder',
+                buttons: ['OK']
+              })
+              reject1(err)
+            })
+          
+          } else {
+            resolve1()
+          }
         })
       } else {
-        console.log(WorkspaceDir + ' directory does not exist')
+        console.log(`${InstallDir} does not exist`)
+        resolve1()
       }
-    } else {
-      console.log('choice: ', choice)
-    }
-    dialog.showMessageBox({
-      type: 'info',
-      message: 'Delete successful !',
-      title: 'Message',
-      buttons: ['OK']
+    })
+
+    const p2 = new Promise(function(resolve2, reject2) {
+      if (fs.existsSync(WorkspaceDir)) {
+        const dialogOptions = { 
+          type: 'question', 
+          title: 'Message',
+          buttons: ['Yes', 'Cancel'],
+          message: 'Do you want to remove ALL the data in `~/ImJoyWorkspace`?'
+        }
+        dialog.showMessageBox(dialogOptions, (choice) => {
+          if (choice === 0) {
+              let workspacePath = WorkspaceDir + '/'
+              deleteFolderRecursive(workspacePath).then(resolve2).catch((err)=>{
+                dialog.showMessageBox({
+                  type: 'error',
+                  message: `Failed to remove '~/ImJoyApp' folder, please remove it manually. Error: ${err}`,
+                  title: 'Failed to remove folder',
+                  buttons: ['OK']
+                })
+                reject2()
+              })
+            
+          } else {
+            resolve2()
+          }
+        })
+      } else {
+        console.log(`${WorkspaceDir} does not exist`)
+        resolve2()
+      }
+    })
+
+    Promise.all([p1, p2]).then(()=>{
+      dialog.showMessageBox({
+        type: 'info',
+        message: `ImJoy Engine has been uninstalled successfully.`,
+        title: 'Successfully uninstalled',
+        buttons: ['OK']
+      })
     })
   })
 }
