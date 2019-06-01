@@ -60,6 +60,7 @@ function checkEngineExists(){
     return false
   }
 }
+
 function download(url, dest) {
   return new Promise((resolve, reject)=>{
     const file = fs.createWriteStream(dest);
@@ -279,6 +280,113 @@ function checkOldInstallation(){
     else{
       resolve()
     }
+  })
+}
+
+// delete directory
+function rmdir(dir,cb) {
+  fs.readdir(dir,function (err, files) {
+    if (err) {
+      console.error(err)
+    } else {
+      next(0);
+      function next(index) {
+        if(index == files.length) {
+          return fs.rmdir(dir,cb);
+        }
+        let newPath = path.join(dir,files[index]);
+        fs.stat(newPath,function (err, stats) {
+          if(err){
+            console.error(err);
+          }
+          if(stats && stats.isDirectory()){
+            rmdir(newPath,()=>next(index+1));
+          } else {
+            fs.unlink(newPath,function (err) {
+              if (err) {
+                console.error(err);
+              }
+              next(index + 1);
+            });
+          }
+        })
+      }
+    }
+  })
+}
+
+// remove directory
+async function removeDir(path) {
+  return new Promise((resolve, reject) => {
+    rmdir(path, () => {
+      if (fs.existsSync(path)) {
+        // delete soft links
+        fs.readdir(path, (err, files) => {
+          if (err) {
+            console.error(err)
+            reject(err)
+          } else {
+            rmdir(path ,() => {
+              console.log('delete success')
+              resolve()
+            })
+          }
+        })  
+      } else {
+        console.log('delete success')  
+        resolve()
+      }
+    })
+  })
+}
+
+async function uninstallImJoyEngine() {
+  if (fs.existsSync(InstallDir)) {
+    let installPath = InstallDir + '/'
+    await removeDir(installPath).catch((err) => {
+      dialog.showMessageBox({
+        type: 'error',
+        message: err,
+        title: 'Error',
+        buttons: ['OK']
+      })
+      return
+    })
+  } else {
+    console.log(InstallDir + ' directory does not exist')
+  }
+
+  const dialogOptions = { 
+    type: 'question', 
+    title: 'Message',
+    buttons: ['Yes', 'Cancel'],
+    message: 'Do you want to remove all the data in the ImJoy Workspace folder?'
+  }
+  dialog.showMessageBox(dialogOptions, async (choice) => {
+    if (choice === 0) {
+      if (fs.existsSync(WorkspaceDir)) {
+        let workspacePath = WorkspaceDir + '/'
+        await removeDir(workspacePath).catch((err) => {
+          dialog.showMessageBox({
+            type: 'error',
+            message: err,
+            title: 'Error',
+            buttons: ['OK']
+          })
+          return
+        })
+      } else {
+        console.log(WorkspaceDir + ' directory does not exist')
+      }
+    } else {
+      console.log('choice: ', choice)
+    }
+    dialog.showMessageBox({
+      type: 'info',
+      message: 'Delete successful !',
+      title: 'Message',
+      buttons: ['OK']
+    })
   })
 }
 
@@ -505,6 +613,9 @@ function setAppMenu(mainWindow){
           installImJoyEngine(mainWindow).then(()=>{
             startImJoyEngine()
           })
+        }},
+        { label: "Uninstall ImJoy Engine", click: ()=>{
+          uninstallImJoyEngine()
         }},
       ]}, {
       label: "Help",
