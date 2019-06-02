@@ -416,7 +416,7 @@ function installImJoyEngine(appWindow) {
           ['Step 3/6: Replace User Site', 'python', ['-c', replace_user_site]],
           ['Step 4/6: Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
           ['Step 5/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
-          ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'git+https://github.com/oeway/ImJoy-Engine#egg=imjoy']],
+          ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'imjoy']],
         ]
 
         const runCmds = async ()=>{
