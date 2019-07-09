@@ -6,14 +6,12 @@ const child_process = require('child_process')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
-const sio = require('socket.io-client')
 const prompt = require('electron-prompt')
 const EngineDialog = require('./assets/engine_dialog')
 const config = require('./config.json')
 let engineDialog = null
 let engineProcess = null
 let welcomeDialog = null
-let socket = null
 let displayingToken = false
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -504,8 +502,7 @@ function startImJoyEngine() {
   if(engineProcess) return;
   engineDialog.text = 'Starting ImJoy Plugin Engine 🚀...'
   if(checkEngineExists()){
-    let engine_container_token = generateUUID()
-    const args = ['-m', 'imjoy', '--port=9527', '--engine_container_token='+engine_container_token]
+    const args = ['-m', 'imjoy', '--port=9527']
     if(serverEnabled){
       args.push('--serve')
     }
@@ -513,30 +510,6 @@ function startImJoyEngine() {
     engineExiting = false
     executeCmd("Starting ImJoy Plugin Engine 🚀...", "python", args, engineDialog, (p)=>{
       engineProcess = p;
-      if(socket) {
-        try {
-          socket.disconnect()
-          socket.close()
-        } catch (e) {
-        }
-      }
-      socket = sio('http://127.0.0.1:9527')
-      socket.on('connect', ()=>{
-        if(engineDialog){
-          engineDialog.text = 'ImJoy Plugin Engine 🚀 (running)'
-        }
-      });
-      socket.on('disconnect', ()=>{
-        if(engineDialog){
-          engineDialog.text = 'ImJoy Plugin Engine 🚀 (stopped)'
-        }
-    });
-      socket.on('message_to_container_'+engine_container_token, (data)=>{
-        if(data.type === 'popup_token'){
-          showToken(tk, engineDialog);
-        }
-      })
-
     }).catch((e)=>{
       console.error(e)
       engineProcess = null
