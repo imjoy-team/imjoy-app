@@ -1,19 +1,17 @@
 'use strict';
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, protocol, dialog, Menu, ipcMain, BrowserView} = require('electron')
+const {app, BrowserWindow, dialog, Menu, ipcMain, BrowserView} = require('electron')
 const path = require('path')
-const url = require('url')
 const child_process = require('child_process')
-const http = require('http')
 const https = require('https')
 const os = require('os')
 const fs = require('fs')
 const prompt = require('electron-prompt')
 const EngineDialog = require('./assets/engine_dialog')
+const config = require('./config.json')
 let engineDialog = null
 let engineProcess = null
 let welcomeDialog = null
-let socket = null
 let displayingToken = false
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -683,7 +681,8 @@ function createWelcomeDialog () {
 }
 
 function createWindow (route_path) {
-  let serverUrl = 'https://imjoy.io';
+  let serverUrl = config.serverUrl
+
   if(serverEnabled){
     serverUrl = 'http://127.0.0.1:9527'
   }

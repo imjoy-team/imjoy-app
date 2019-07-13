@@ -1,50 +1,61 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8">
-		<link rel="stylesheet" href="./mdl/material.min.css">
-		<script src="./mdl/material.min.js"></script>
-		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-		<!-- Wide card with share menu button -->
-		<style>
-		.mdl-card__title {
-		  color: #fff;
-		  height: 200px;
-		  background: url('./background.png') center / cover;
-		}
-		.mdl-card__menu {
-		  color: #fff;
-		}
-		</style>
-		<script>
-			function sendCommand(cmd, arg){
-				require("electron").ipcRenderer.send(cmd, arg)
-			}
-		</script>
-	</head>
-	<body>
-		  <div class="mdl-card__title">
-		    <h2 class="mdl-card__title-text">ImJoy Desktop App</h2>
-		  </div>
-		  <div class="mdl-card__supporting-text">
-		    ImJoy (https://imjoy.io): Image Processing with Joy.
-		  </div>
-		  <div class="mdl-card__actions mdl-card--border">
-				<a onclick="sendCommand('START_CMD', {start_engine: true, close_welcome: false})" class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
-		      Start Plugin Engine 🚀
-		    </a>
-				<a onclick="sendCommand('START_CMD', {start_app: true, close_welcome: false})" class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
-		      Start ImJoy App
-		    </a>
-				<a onclick="sendCommand('START_CMD', {run_offline: true, close_welcome: true})" class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
-		      Run ImJoy Offline
-		    </a>
-		  </div>
-		  <div class="mdl-card__menu">
-		    <!-- <button class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="./mdl/material.min.css">
+  <script src="./mdl/material.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <!-- Wide card with share menu button -->
+  <style>
+    .mdl-card__title {
+      color: #fff;
+      height: 200px;
+      background: url('./background.png') center / cover;
+    }
+
+    .mdl-card__menu {
+      color: #fff;
+    }
+  </style>
+  <script>
+    function sendCommand(cmd, arg) {
+      require("electron").ipcRenderer.send(cmd, arg)
+    }
+  </script>
+</head>
+
+<body>
+  <div class="mdl-card__title">
+    <h2 class="mdl-card__title-text">ImJoy Desktop App</h2>
+  </div>
+  <div class="mdl-card__supporting-text">
+    ImJoy (<label id="serverUrl"></label>): Image Processing with Joy.
+  </div>
+  <div class="mdl-card__actions mdl-card--border">
+    <a onclick="sendCommand('START_CMD', {start_engine: true, close_welcome: false})"
+      class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+      Start Plugin Engine 🚀
+    </a>
+    <a onclick="sendCommand('START_CMD', {start_app: true, close_welcome: false})"
+      class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+      Start ImJoy App
+    </a>
+    <a onclick="sendCommand('START_CMD', {run_offline: true, close_welcome: true})"
+      class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+      Run ImJoy Offline
+    </a>
+  </div>
+  <div class="mdl-card__menu">
+    <!-- <button class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect">
 		      <i class="material-icons">share</i>
 		    </button> -->
-		  </div>
+  </div>
+  <script>
+    let config = require('../config.json')
+    let serverUrl = document.getElementById('serverUrl')
+    serverUrl.innerText = config.serverUrl
+  </script>
+</body>
 
-	</body>
 </html>
