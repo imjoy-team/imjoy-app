@@ -45,7 +45,7 @@ print('User site replaced.')
 `
 function checkEngineExists(){
   if(fs.existsSync(InstallDir)){
-    const p = child_process.spawnSync('python', ['-c', '"import imjoy"']);
+    const p = child_process.spawnSync('python -c "import imjoy"', {shell: true});
     if(p.status == 0){
       return true
     }
@@ -95,7 +95,7 @@ function executeCmd(label, cmd, param, ed, callback) {
     if(fs.existsSync(sslPath)){
       env.PATH = sslPath + path.delimiter + env.PATH
     }
-    const p = child_process.spawn(cmd, param, { env: env });
+    const p = child_process.spawn(cmd + ' ' + param.join(' '), { env: env, shell: true });
     if(callback) callback(p);
     processes.push(p)
     let backlog_out = ''
@@ -330,8 +330,8 @@ function uninstallImJoyEngine() {
   return new Promise((resolve, reject)=>{
     const p1 = new Promise(function(resolve1, reject1) {
       if (fs.existsSync(InstallDir)) {
-        const dialogOptions = { 
-          type: 'question', 
+        const dialogOptions = {
+          type: 'question',
           title: 'Message',
           buttons: ['Yes', 'Cancel'],
           message: 'Do you want to remove ALL the data in `~/ImJoyApp`?'
@@ -348,7 +348,7 @@ function uninstallImJoyEngine() {
               })
               reject1(err)
             })
-          
+
           } else {
             resolve1()
           }
@@ -361,8 +361,8 @@ function uninstallImJoyEngine() {
 
     const p2 = new Promise(function(resolve2, reject2) {
       if (fs.existsSync(WorkspaceDir)) {
-        const dialogOptions = { 
-          type: 'question', 
+        const dialogOptions = {
+          type: 'question',
           title: 'Message',
           buttons: ['Yes', 'Cancel'],
           message: 'Do you want to remove ALL the data in `~/ImJoyWorkspace`?'
@@ -379,7 +379,7 @@ function uninstallImJoyEngine() {
                 })
                 reject2()
               })
-            
+
           } else {
             resolve2()
           }
