@@ -29,20 +29,6 @@ let engineExiting = false
 process.env.PATH = process.platform !== "win32" ? `${InstallDir}${path.sep}bin${path.delimiter}${process.env.PATH}` :
 `${InstallDir}${path.delimiter}${InstallDir}${path.sep}Scripts${path.delimiter}${process.env.PATH}`;
 
-const replace_user_site = `
-import site
-site_file = site.__file__.replace('.pyc', '.py');
-with open(site_file) as fin:
-    lines = fin.readlines();
-for i,line in enumerate(lines):
-    if(line.find('ENABLE_USER_SITE = None') > -1):
-        user_site_line = i;
-        break;
-lines[user_site_line] = 'ENABLE_USER_SITE = False\\n'
-with open(site_file,'w') as fout:
-    fout.writelines(lines)
-print('User site replaced.')
-`
 function checkEngineExists(){
   if(fs.existsSync(InstallDir)){
     const p = child_process.spawnSync('python -c "import imjoy"', {shell: true});
@@ -410,32 +396,31 @@ function installImJoyEngine(appWindow) {
         ed.show()
         fs.mkdirSync(InstallDir);
         const cmds = [
-          ['Step 3/6: Replace User Site', 'python', ['-c', replace_user_site]],
-          ['Step 4/6: Install Git', 'conda', ['install', '-y', 'git', '-p', InstallDir]],
-          ['Step 5/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
-          ['Step 6/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'imjoy']],
+          ['Step 3/5: Replace User Site', 'python', [__dirname + '/replace_user_site.py']],
+          ['Step 4/5: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
+          ['Step 5/5: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'imjoy[engine]']],
         ]
 
         const runCmds = async ()=>{
           ed.log('Downloading Miniconda...')
-          ed.text = 'Step 1/6: Downloading Miniconda...'
+          ed.text = 'Step 1/5: Downloading Miniconda...'
           if(process.platform === 'darwin'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+            cmds.unshift(['Step 2/5: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
           }
           else if(process.platform === 'linux'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+            cmds.unshift(['Step 2/5: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
           }
           else if(process.platform === 'win32'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+            cmds.unshift(['Step 2/5: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
           }
           else{
             throw "Unsupported Platform: " + process.platform
