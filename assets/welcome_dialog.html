@@ -33,17 +33,17 @@
     ImJoy (<label id="serverUrl"></label>): Image Processing with Joy.
   </div>
   <div class="mdl-card__actions mdl-card--border">
-    <a onclick="sendCommand('START_CMD', {start_engine: true, close_welcome: false})"
+    <a onclick="sendCommand('START_CMD', {start_engine: 'jupyter', close_welcome: false})"
       class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
-      Start Plugin Engine 🚀
+      Start Jupyter Engine 🚀
+    </a>
+    <a onclick="sendCommand('START_CMD', {start_engine: 'imjoy', close_welcome: false})"
+      class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
+      Start ImJoy Engine 🚀
     </a>
     <a onclick="sendCommand('START_CMD', {start_app: true, close_welcome: false})"
       class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
       Start ImJoy App
-    </a>
-    <a onclick="sendCommand('START_CMD', {run_offline: true, close_welcome: true})"
-      class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">
-      Run ImJoy Offline
     </a>
   </div>
   <div class="mdl-card__menu">

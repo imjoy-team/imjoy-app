@@ -33,7 +33,19 @@ function checkEngineExists(){
   if(fs.existsSync(InstallDir)){
     const p = child_process.spawnSync('python -c "import imjoy"', {shell: true});
     if(p.status == 0){
-      return true
+      const p2 = child_process.spawnSync('python -c "import jupyter"', {shell: true});
+      if(p2.status == 0){
+        return true
+      }
+      else{
+        const p3 = child_process.spawnSync('python -m pip install --upgrade jupyter', {shell: true});
+        if(p3.status == 0){
+          return true
+        }
+        else{
+          return false
+        }
+      }
     }
     else{
       return false
@@ -81,7 +93,7 @@ function executeCmd(label, cmd, param, ed, callback) {
     if(fs.existsSync(sslPath)){
       env.PATH = sslPath + path.delimiter + env.PATH
     }
-    const p = child_process.spawn(cmd + ' ' + param.join(' '), { env: env, shell: true });
+    const p = child_process.spawn(cmd + ' ' + param.join(' '), { env: env, shell: true, cwd: WorkspaceDir });
     if(callback) callback(p);
     processes.push(p)
     let backlog_out = ''
@@ -137,7 +149,7 @@ function executeCmd(label, cmd, param, ed, callback) {
 
 ipcMain.on('START_CMD', (event, arg) => {
   if(arg.start_app){
-    const tk = getToken();
+    const tk = getImJoyToken();
     if(tk){
       createWindow('/#/app?token='+tk);
     }
@@ -145,11 +157,11 @@ ipcMain.on('START_CMD', (event, arg) => {
       createWindow('/#/app');
     }
   }
-  else if(arg.start_engine){
-    startImJoyEngine()
+  else if(arg.start_engine==='imjoy'){
+    startImJoyEngine('imjoy')
   }
-  else if(arg.run_offline){
-    switchToOffline()
+  else if(arg.start_engine==='jupyter'){
+    startImJoyEngine('jupyter')
   }
   else{
     console.log("unsupported command", arg)
@@ -170,26 +182,16 @@ ipcMain.on('UPDATE_ENGINE_DIALOG', (event, arg) => {
     return;
   }
   if(arg.show_token){
-    const tk = getToken();
-    showToken(tk, engineDialog)
+    if(engineDialog.type === 'imjoy'){
+      const tk = getImJoyToken();
+      showToken(tk, engineDialog)
+    }
+    else{
+      const tk = getJupyterURL();
+      showToken(tk, engineDialog)
+    }
+    
   }
-  // if(arg.show){
-  //   engineDialog.show()
-  //   event.sender.send('ENGINE_DIALOG_RESULT', {success: true, show: true})
-  // }
-  // else if(arg.exit){
-  //   try {
-  //     engineExiting = true
-  //     terminateImJoyEngine()
-  //     event.sender.send('ENGINE_DIALOG_RESULT', {success: true, stop: true})
-  //   } catch (e) {
-  //     event.sender.send('ENGINE_DIALOG_RESULT', {error: true, stop: true})
-  //   }
-  // }
-  // else if(arg.hide){
-  //   engineDialog.hide()
-  //   event.sender.send('ENGINE_DIALOG_RESULT', {success: true, hide: true})
-  // }
 })
 
 function initEngineDialog(config){
@@ -396,31 +398,32 @@ function installImJoyEngine(appWindow) {
         ed.show()
         fs.mkdirSync(InstallDir);
         const cmds = [
-          ['Step 3/5: Replace User Site', 'python', [__dirname + '/replace_user_site.py']],
-          ['Step 4/5: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
-          ['Step 5/5: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'imjoy[engine]']],
+          ['Step 3/6: Replace User Site', 'python', [__dirname + '/replace_user_site.py']],
+          ['Step 4/6: Upgrade PIP', 'python', ['-m', 'pip', 'install', '--upgrade', 'pip']],
+          ['Step 5/6: Install ImJoy', 'python', ['-m', 'pip', 'install', '--upgrade', 'imjoy[engine]']],
+          ['Step 6/6: Install Jupyter', 'python', ['-m', 'pip', 'install', '--upgrade', 'jupyter']],
         ]
 
         const runCmds = async ()=>{
           ed.log('Downloading Miniconda...')
-          ed.text = 'Step 1/5: Downloading Miniconda...'
+          ed.text = 'Step 1/6: Downloading Miniconda...'
           if(process.platform === 'darwin'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/5: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
           }
           else if(process.platform === 'linux'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.sh')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/5: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
+            cmds.unshift(['Step 2/6: Install Miniconda', 'bash', [InstallerPath, '-b', '-f', '-p', InstallDir]])
           }
           else if(process.platform === 'win32'){
             const InstallerPath = path.join(InstallDir, 'Miniconda_Install.exe')
             await download("https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe", InstallerPath)
             ed.log('Miniconda donwloaded.')
-            cmds.unshift(['Step 2/5: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
+            cmds.unshift(['Step 2/6: Install Miniconda', InstallerPath, ['/S', '/AddToPath=0', '/D='+InstallDir]])
           }
           else{
             throw "Unsupported Platform: " + process.platform
@@ -460,7 +463,8 @@ function installImJoyEngine(appWindow) {
 function showToken(tk, engineDialog){
   if(tk && !displayingToken){
     displayingToken = true
-    prompt({
+    if(engineDialog.type === 'imjoy'){
+      prompt({
         title: 'Connecting to the ImJoy Plugin Engine',
         label: '🚀 Connection Token -- Please copy & paste it to your ImJoy Web App',
         value: tk,
@@ -470,30 +474,58 @@ function showToken(tk, engineDialog){
             type: 'text',
             style: 'font-size:20px; font-family: Arial, Helvetica, sans-serif;'
         }
-    }, engineDialog && engineDialog._window).finally(()=>{
-      displayingToken = false
-    })
+      }, engineDialog && engineDialog._window).finally(()=>{
+        displayingToken = false
+      })
+    }
+    else{
+      prompt({
+        title: 'Connecting to the Jupyter',
+        label: '🚀 Jupyter server URL -- Please copy & paste it to your ImJoy Web App',
+        value: tk,
+        width: 580,
+        height: 150,
+        inputAttrs: {
+            type: 'text',
+            style: 'font-size:20px; font-family: Arial, Helvetica, sans-serif;'
+        }
+      }, engineDialog && engineDialog._window).finally(()=>{
+        displayingToken = false
+      })
+    }
+    
+    
   }
   else{
     if(!tk) console.log('No connection token found in ".token"')
   }
 }
-function startImJoyEngine() {
-  const tk = getToken();
+
+function startImJoyEngine(type) {
+  const tk = getImJoyToken();
   if(!engineDialog || engineDialog.isCompleted()){
     engineDialog = initEngineDialog({hideProgress: true, hideButtons: !tk})
   }
   engineDialog.show()
   if(engineProcess) return;
   engineDialog.text = 'Starting ImJoy Plugin Engine 🚀...'
+  engineDialog.type = type
   if(checkEngineExists()){
-    const args = ['-m', 'imjoy', '--port=9527']
-    if(serverEnabled){
-      args.push('--serve')
+    let args
+    if(type ==='imjoy'){
+      args = ['python', '-m', 'imjoy', '--port=9527']
+      if(serverEnabled){
+        args.push('--serve')
+      }
     }
+    else{
+      const cmd = `jupyter notebook --NotebookApp.allow_origin='*' --no-browser`
+      args = cmd.split(' ')
+    }
+
     engineEndCallback = null
     engineExiting = false
-    executeCmd("Starting ImJoy Plugin Engine 🚀...", "python", args, engineDialog, (p)=>{
+    executeCmd(`Starting Plugin Engine 🚀 (${type})...`, args[0], args.slice(1), engineDialog, (p)=>{
       engineProcess = p;
     }).catch((e)=>{
       console.error(e)
@@ -551,7 +583,7 @@ function setAppMenu(mainWindow){
           { type: "separator" },
           { label: "Reload", accelerator: "CmdOrCtrl+R", click: ()=>{ if(mainWindow && !mainWindow.closed) mainWindow.reload() }},
           { label: "New ImJoy Instance", accelerator: "CmdOrCtrl+N", click: ()=>{
-            const tk = getToken();
+            const tk = getImJoyToken();
             if(tk){
               createWindow('/#/app?token='+tk);
             }
@@ -559,8 +591,6 @@ function setAppMenu(mainWindow){
               createWindow('/#/app');
             }
           }},
-          { type: "separator" },
-          { label: "Switch to offline mode", click: ()=>{ switchToOffline()}},
           { type: "separator" },
           { label: "Quit", accelerator: "Command+Q", click: ()=>{
             app.quit(); }}
@@ -577,13 +607,15 @@ function setAppMenu(mainWindow){
       ]}, {
       label: "ImJoyEngine",
       submenu: [
-        { label: "Start Plugin Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine()}},
+        { label: "Start ImJoy Engine", accelerator: "CmdOrCtrl+E", click: ()=>{startImJoyEngine('imjoy')}},
+        { label: "Start Jupyter Engine", accelerator: "CmdOrCtrl+J", click: ()=>{startImJoyEngine('jupyter')}},
         { label: "Hide Engine Dialog", accelerator: "CmdOrCtrl+H", click: ()=>{ if(engineDialog) engineDialog.hide() }},
         { type: "separator" },
         { label: "Install Plugin Engine", click: ()=>{
-          installImJoyEngine(mainWindow).then(()=>{
-            startImJoyEngine()
-          })
+          installImJoyEngine(mainWindow)
+          // .then(()=>{
+          //   startImJoyEngine()
+          // })
         }},
         { label: "Uninstall ImJoy Engine", click: ()=>{
           uninstallImJoyEngine()
@@ -597,7 +629,7 @@ function setAppMenu(mainWindow){
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
-function getToken(){
+function getImJoyToken(){
   const tokenPath = path.join(WorkspaceDir, '.token')
   try {
     const contents = fs.readFileSync(tokenPath, 'utf8')
@@ -606,35 +638,19 @@ function getToken(){
     return null
   }
 }
-function switchToOffline(mainWindow){
-  serverEnabled = true;
-  const startEngine = ()=>{
-    startImJoyEngine(mainWindow);
-    setTimeout(()=>{
-      if(engineProcess){
-        // dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Offline mode.", message: "Plugin Engine is running, you may need to refresh the window to see the ImJoy app."})
-        const tk = getToken();
-        if(tk){
-          createWindow('/#/app?token='+tk);
-        }
-        else{
-          createWindow('/#/app');
+function getJupyterURL(){
+  const p = child_process.spawnSync('jupyter notebook list', {shell: true});
+  if(p.status == 0){
+    const output = p.stdout.toString('utf8');
+    for(let line of output.split('\n')){
+      if(line.includes('::')){
+        if(path.resolve(line.split('::')[1].trim()) === path.resolve(WorkspaceDir)){
+          return line.split('::')[0].trim()
         }
       }
-      else{
-        dialog.showMessageBox({type: 'info', buttons: ['OK'], title: "Failed to start.", message: "ImJoy Plugin Engine failed to start."})
-      }
-    }, 5000)
+    }
   }
-  if(mainWindow && !mainWindow.closed) mainWindow.close();
-  if(engineDialog) engineDialog.show();
-  if(engineProcess){
-    engineEndCallback = startEngine
-    terminateImJoyEngine()
-  }
-  else{
-    startEngine()
-  }
+  return false
 }
 
 function createWelcomeDialog () {
@@ -647,8 +663,8 @@ function createWelcomeDialog () {
     closable: true,
     minimizable: true,
     maximizable: false,
-    width: 600,
-    height: 360,
+    width: 700,
+    height: 390,
     // webPreferences: {
     //     nodeIntegration: false,
     //     preload: path.join(__dirname, 'assets', 'preload.js')
