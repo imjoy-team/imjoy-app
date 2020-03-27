@@ -2,7 +2,7 @@
 
 ------
 
-## NOTE: This desktop app is deprecated, since browsers now support [Progressive Web Apps]() standard. 
+## NOTE: This desktop app is deprecated, since browsers now support [Progressive Web Apps](https://en.wikipedia.org/wiki/Progressive_web_application) standard. 
 
 For running ImJoy offline, you don't need this app but just load https://imjoy.io once, or install it with the browser ([how](https://www.howtogeek.com/fyi/how-to-install-progressive-web-apps-pwas-in-chrome/)).
 
