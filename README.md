@@ -1,5 +1,13 @@
 # ImJoy Desktop App
 
+------
+
+## NOTE: This desktop app is deprecated, since browsers now support [Progressive Web Apps]() standard. 
+
+For running ImJoy offline, you don't need this app but just load https://imjoy.io once, or install it with the browser ([how](https://www.howtogeek.com/fyi/how-to-install-progressive-web-apps-pwas-in-chrome/)).
+
+------
+
 This Desktop App is a standalone version of [ImJoy.io](https://imjoy.io), it also comes with a Plugin Engine which is used for running native Python plugins.
 
 ## Installation
